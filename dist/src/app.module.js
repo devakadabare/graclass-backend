@@ -23,6 +23,7 @@ const class_module_1 = require("./modules/class/class.module");
 const dashboard_module_1 = require("./modules/dashboard/dashboard.module");
 const enrollment_module_1 = require("./modules/enrollment/enrollment.module");
 const group_module_1 = require("./modules/group/group.module");
+const health_module_1 = require("./health/health.module");
 const jwt_auth_guard_1 = require("./modules/auth/guards/jwt-auth.guard");
 const roles_guard_1 = require("./modules/auth/guards/roles.guard");
 let AppModule = class AppModule {
@@ -36,6 +37,7 @@ exports.AppModule = AppModule = __decorate([
                 envFilePath: '.env',
             }),
             prisma_module_1.PrismaModule,
+            health_module_1.HealthModule,
             auth_module_1.AuthModule,
             lecturer_module_1.LecturerModule,
             student_module_1.StudentModule,

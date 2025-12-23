@@ -169,7 +169,10 @@ __decorate([
         type: course_response_dto_1.CourseResponseDto,
     }),
     (0, swagger_1.ApiResponse)({ status: 404, description: 'Course not found' }),
-    (0, swagger_1.ApiResponse)({ status: 403, description: 'Not authorized to update this course' }),
+    (0, swagger_1.ApiResponse)({
+        status: 403,
+        description: 'Not authorized to update this course',
+    }),
     __param(0, (0, common_1.Param)('id')),
     __param(1, (0, current_user_decorator_1.CurrentUser)('id')),
     __param(2, (0, common_1.Body)()),
@@ -192,7 +195,10 @@ __decorate([
         description: 'Course deleted successfully',
     }),
     (0, swagger_1.ApiResponse)({ status: 404, description: 'Course not found' }),
-    (0, swagger_1.ApiResponse)({ status: 403, description: 'Not authorized to delete this course' }),
+    (0, swagger_1.ApiResponse)({
+        status: 403,
+        description: 'Not authorized to delete this course',
+    }),
     __param(0, (0, common_1.Param)('id')),
     __param(1, (0, current_user_decorator_1.CurrentUser)('id')),
     __metadata("design:type", Function),

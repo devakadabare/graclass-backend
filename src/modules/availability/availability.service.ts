@@ -52,9 +52,7 @@ export class AvailabilityService {
         lecturerId: user.lecturer.id,
         isRecurring: dto.isRecurring,
         dayOfWeek: dto.isRecurring ? dto.dayOfWeek : null,
-        specificDate: dto.specificDate
-          ? new Date(dto.specificDate)
-          : null,
+        specificDate: dto.specificDate ? new Date(dto.specificDate) : null,
         startTime: dto.startTime,
         endTime: dto.endTime,
       },
@@ -92,10 +90,7 @@ export class AvailabilityService {
       where.OR = [
         { isRecurring: true },
         {
-          AND: [
-            { isRecurring: false },
-            { specificDate: { gte: new Date() } },
-          ],
+          AND: [{ isRecurring: false }, { specificDate: { gte: new Date() } }],
         },
       ];
     }
@@ -134,10 +129,7 @@ export class AvailabilityService {
       OR: [
         { isRecurring: true },
         {
-          AND: [
-            { isRecurring: false },
-            { specificDate: { gte: new Date() } },
-          ],
+          AND: [{ isRecurring: false }, { specificDate: { gte: new Date() } }],
         },
       ],
     };

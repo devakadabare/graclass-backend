@@ -202,7 +202,7 @@ let AuthService = AuthService_1 = class AuthService {
             }
             return this.generateTokens(user.id, user.email, user.role);
         }
-        catch (error) {
+        catch {
             throw new common_1.UnauthorizedException('Invalid refresh token');
         }
     }

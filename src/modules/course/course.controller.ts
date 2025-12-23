@@ -154,7 +154,10 @@ export class CourseController {
     type: CourseResponseDto,
   })
   @ApiResponse({ status: 404, description: 'Course not found' })
-  @ApiResponse({ status: 403, description: 'Not authorized to update this course' })
+  @ApiResponse({
+    status: 403,
+    description: 'Not authorized to update this course',
+  })
   async updateCourse(
     @Param('id') id: string,
     @CurrentUser('id') userId: string,
@@ -177,7 +180,10 @@ export class CourseController {
     description: 'Course deleted successfully',
   })
   @ApiResponse({ status: 404, description: 'Course not found' })
-  @ApiResponse({ status: 403, description: 'Not authorized to delete this course' })
+  @ApiResponse({
+    status: 403,
+    description: 'Not authorized to delete this course',
+  })
   async deleteCourse(
     @Param('id') id: string,
     @CurrentUser('id') userId: string,

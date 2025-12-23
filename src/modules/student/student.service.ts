@@ -241,20 +241,40 @@ export class StudentService {
   async getMyClasses(userId: string, upcoming: boolean = true) {
     const user = await this.prisma.user.findUnique({
       where: { id: userId },
-      include: { student: true },
+      include: {
+        student: {
+          include: {
+            groupEnrollments: {
+              select: {
+                groupId: true,
+              },
+            },
+          },
+        },
+      },
     });
 
     if (!user || !user.student) {
       throw new NotFoundException('Student profile not found');
     }
 
+    // Get student group IDs that the student belongs to
+    const studentGroupIds = user.student.groupEnrollments.map(
+      (enrollment) => enrollment.groupId,
+    );
+
     const where: any = {
-      studentId: user.student.id,
+      OR: [
+        { studentId: user.student.id },
+        ...(studentGroupIds.length > 0
+          ? [{ studentGroupId: { in: studentGroupIds } }]
+          : []),
+      ],
     };
 
     if (upcoming) {
       where.date = {
-        gte: new Date(),
+        gte: new Date().toISOString().split('T')[0], // Use date string for comparison
       };
       where.status = 'SCHEDULED';
     }

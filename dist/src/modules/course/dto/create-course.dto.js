@@ -73,7 +73,7 @@ __decorate([
 __decorate([
     (0, swagger_1.ApiProperty)({
         description: 'Hourly rate in USD',
-        example: 50.00,
+        example: 50.0,
         minimum: 0,
     }),
     (0, class_validator_1.IsNumber)({ maxDecimalPlaces: 2 }),

@@ -194,17 +194,33 @@ let StudentService = StudentService_1 = class StudentService {
     async getMyClasses(userId, upcoming = true) {
         const user = await this.prisma.user.findUnique({
             where: { id: userId },
-            include: { student: true },
+            include: {
+                student: {
+                    include: {
+                        groupEnrollments: {
+                            select: {
+                                groupId: true,
+                            },
+                        },
+                    },
+                },
+            },
         });
         if (!user || !user.student) {
             throw new common_1.NotFoundException('Student profile not found');
         }
+        const studentGroupIds = user.student.groupEnrollments.map((enrollment) => enrollment.groupId);
         const where = {
-            studentId: user.student.id,
+            OR: [
+                { studentId: user.student.id },
+                ...(studentGroupIds.length > 0
+                    ? [{ studentGroupId: { in: studentGroupIds } }]
+                    : []),
+            ],
         };
         if (upcoming) {
             where.date = {
-                gte: new Date(),
+                gte: new Date().toISOString().split('T')[0],
             };
             where.status = 'SCHEDULED';
         }

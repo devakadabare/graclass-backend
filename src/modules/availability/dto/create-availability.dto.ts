@@ -2,7 +2,6 @@ import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import {
   IsBoolean,
   IsInt,
-  IsOptional,
   IsString,
   Matches,
   Min,
@@ -20,7 +19,8 @@ export class CreateAvailabilityDto {
   isRecurring: boolean;
 
   @ApiPropertyOptional({
-    description: 'Day of week for recurring availability (0=Sunday, 6=Saturday)',
+    description:
+      'Day of week for recurring availability (0=Sunday, 6=Saturday)',
     example: 1,
     minimum: 0,
     maximum: 6,

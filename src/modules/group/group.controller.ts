@@ -109,10 +109,7 @@ export class GroupController {
   })
   @ApiResponse({ status: 404, description: 'Group not found' })
   @ApiResponse({ status: 400, description: 'Already a member' })
-  async joinGroup(
-    @CurrentUser('id') userId: string,
-    @Param('id') id: string,
-  ) {
+  async joinGroup(@CurrentUser('id') userId: string, @Param('id') id: string) {
     return this.groupService.joinGroup(userId, id);
   }
 

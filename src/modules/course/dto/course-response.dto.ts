@@ -54,7 +54,7 @@ export class CourseResponseDto {
 
   @ApiProperty({
     description: 'Hourly rate',
-    example: 50.00,
+    example: 50.0,
   })
   @Expose()
   hourlyRate: number;

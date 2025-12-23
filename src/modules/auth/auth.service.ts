@@ -213,7 +213,7 @@ export class AuthService {
       }
 
       return this.generateTokens(user.id, user.email, user.role);
-    } catch (error) {
+    } catch {
       throw new UnauthorizedException('Invalid refresh token');
     }
   }
@@ -221,11 +221,7 @@ export class AuthService {
   /**
    * Generate JWT tokens
    */
-  private async generateTokens(
-    userId: string,
-    email: string,
-    role: UserRole,
-  ) {
+  private async generateTokens(userId: string, email: string, role: UserRole) {
     const payload = {
       sub: userId,
       email,

@@ -5,7 +5,6 @@ import {
   IsNumber,
   Min,
   MinLength,
-  IsDecimal,
 } from 'class-validator';
 import { Type } from 'class-transformer';
 
@@ -21,7 +20,8 @@ export class CreateCourseDto {
 
   @ApiPropertyOptional({
     description: 'Course description',
-    example: 'Learn the fundamentals of web development including HTML, CSS, and JavaScript',
+    example:
+      'Learn the fundamentals of web development including HTML, CSS, and JavaScript',
   })
   @IsOptional()
   @IsString()
@@ -55,7 +55,7 @@ export class CreateCourseDto {
 
   @ApiProperty({
     description: 'Hourly rate in USD',
-    example: 50.00,
+    example: 50.0,
     minimum: 0,
   })
   @IsNumber({ maxDecimalPlaces: 2 })

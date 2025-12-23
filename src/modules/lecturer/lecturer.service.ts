@@ -3,9 +3,15 @@ import {
   NotFoundException,
   Logger,
   ForbiddenException,
+  ConflictException,
+  BadRequestException,
 } from '@nestjs/common';
 import { PrismaService } from '../../prisma/prisma.service';
 import { UpdateLecturerProfileDto } from './dto/update-lecturer-profile.dto';
+import { CreateStudentDto } from './dto/create-student.dto';
+import { CreateEnrollmentDto } from './dto/create-enrollment.dto';
+import * as bcrypt from 'bcrypt';
+import { UserRole, EnrollmentStatus } from '@prisma/client';
 
 @Injectable()
 export class LecturerService {
@@ -186,5 +192,193 @@ export class LecturerService {
         totalPages: Math.ceil(total / limit),
       },
     };
+  }
+
+  /**
+   * Create a new student account (lecturer only)
+   */
+  async createStudent(lecturerId: string, dto: CreateStudentDto) {
+    // Check if lecturer exists
+    const lecturer = await this.prisma.user.findUnique({
+      where: { id: lecturerId },
+      include: { lecturer: true },
+    });
+
+    if (!lecturer || !lecturer.lecturer) {
+      throw new NotFoundException('Lecturer profile not found');
+    }
+
+    // Check if user with this email already exists
+    const existingUser = await this.prisma.user.findUnique({
+      where: { email: dto.email },
+    });
+
+    if (existingUser) {
+      throw new ConflictException('User with this email already exists');
+    }
+
+    // Hash password
+    const hashedPassword = await bcrypt.hash(dto.password, 10);
+
+    // Create user and student profile
+    const user = await this.prisma.user.create({
+      data: {
+        email: dto.email,
+        password: hashedPassword,
+        role: UserRole.STUDENT,
+        student: {
+          create: {
+            firstName: dto.firstName,
+            lastName: dto.lastName,
+            phone: dto.phone,
+            university: dto.university,
+            studentId: dto.studentId,
+          },
+        },
+      },
+      include: {
+        student: true,
+      },
+    });
+
+    this.logger.log(
+      `Student created by lecturer ${lecturer.email}: ${user.email}`,
+    );
+
+    return {
+      id: user.student!.id,
+      email: user.email,
+      firstName: user.student!.firstName,
+      lastName: user.student!.lastName,
+      phone: user.student!.phone,
+      university: user.student!.university,
+      studentId: user.student!.studentId,
+    };
+  }
+
+  /**
+   * Directly enroll a student in a course (lecturer only)
+   */
+  async createEnrollment(lecturerId: string, dto: CreateEnrollmentDto) {
+    // Validate that either studentId or studentGroupId is provided
+    if (!dto.studentId && !dto.studentGroupId) {
+      throw new BadRequestException(
+        'Either studentId or studentGroupId must be provided',
+      );
+    }
+
+    if (dto.studentId && dto.studentGroupId) {
+      throw new BadRequestException(
+        'Cannot provide both studentId and studentGroupId',
+      );
+    }
+
+    // Get lecturer profile
+    const lecturer = await this.prisma.user.findUnique({
+      where: { id: lecturerId },
+      include: { lecturer: true },
+    });
+
+    if (!lecturer || !lecturer.lecturer) {
+      throw new NotFoundException('Lecturer profile not found');
+    }
+
+    // Check if course exists and belongs to the lecturer
+    const course = await this.prisma.course.findUnique({
+      where: { id: dto.courseId },
+      include: { lecturer: true },
+    });
+
+    if (!course) {
+      throw new NotFoundException('Course not found');
+    }
+
+    if (course.lecturerId !== lecturer.lecturer.id) {
+      throw new ForbiddenException(
+        'You can only enroll students in your own courses',
+      );
+    }
+
+    // Check if student/group exists
+    if (dto.studentId) {
+      const student = await this.prisma.student.findUnique({
+        where: { id: dto.studentId },
+      });
+
+      if (!student) {
+        throw new NotFoundException('Student not found');
+      }
+
+      // Check if enrollment already exists
+      const existingEnrollment = await this.prisma.courseEnrollment.findFirst({
+        where: {
+          courseId: dto.courseId,
+          studentId: dto.studentId,
+        },
+      });
+
+      if (existingEnrollment) {
+        throw new ConflictException(
+          'Student is already enrolled in this course',
+        );
+      }
+    } else if (dto.studentGroupId) {
+      const group = await this.prisma.studentGroup.findUnique({
+        where: { id: dto.studentGroupId },
+      });
+
+      if (!group) {
+        throw new NotFoundException('Student group not found');
+      }
+
+      // Check if enrollment already exists
+      const existingEnrollment = await this.prisma.courseEnrollment.findFirst({
+        where: {
+          courseId: dto.courseId,
+          studentGroupId: dto.studentGroupId,
+        },
+      });
+
+      if (existingEnrollment) {
+        throw new ConflictException('Group is already enrolled in this course');
+      }
+    }
+
+    // Create enrollment with APPROVED status (direct enrollment by lecturer)
+    const enrollment = await this.prisma.courseEnrollment.create({
+      data: {
+        courseId: dto.courseId,
+        studentId: dto.studentId,
+        studentGroupId: dto.studentGroupId,
+        status: EnrollmentStatus.APPROVED,
+      },
+      include: {
+        course: {
+          select: {
+            name: true,
+            subject: true,
+          },
+        },
+        student: {
+          select: {
+            id: true,
+            firstName: true,
+            lastName: true,
+          },
+        },
+        studentGroup: {
+          select: {
+            id: true,
+            name: true,
+          },
+        },
+      },
+    });
+
+    this.logger.log(
+      `Enrollment created by lecturer ${lecturer.email}: Course ${course.name}, ${dto.studentId ? `Student ${enrollment.student?.firstName} ${enrollment.student?.lastName}` : `Group ${enrollment.studentGroup?.name}`}`,
+    );
+
+    return enrollment;
   }
 }

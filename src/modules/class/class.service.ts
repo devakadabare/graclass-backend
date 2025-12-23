@@ -39,7 +39,9 @@ export class ClassService {
     }
 
     if (course.lecturerId !== user.lecturer.id) {
-      throw new ForbiddenException('You can only create classes for your own courses');
+      throw new ForbiddenException(
+        'You can only create classes for your own courses',
+      );
     }
 
     // Validate student or group is provided
@@ -84,11 +86,7 @@ export class ClassService {
   /**
    * Get all classes for a lecturer
    */
-  async getLecturerClasses(
-    userId: string,
-    status?: string,
-    fromDate?: string,
-  ) {
+  async getLecturerClasses(userId: string, status?: string, fromDate?: string) {
     const user = await this.prisma.user.findUnique({
       where: { id: userId },
       include: { lecturer: true },

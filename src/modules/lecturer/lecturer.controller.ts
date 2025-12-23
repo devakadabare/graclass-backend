@@ -2,6 +2,7 @@ import {
   Controller,
   Get,
   Put,
+  Post,
   Body,
   Param,
   Query,
@@ -15,6 +16,7 @@ import {
   ApiBearerAuth,
   ApiParam,
   ApiQuery,
+  ApiBody,
 } from '@nestjs/swagger';
 import { LecturerService } from './lecturer.service';
 import { UpdateLecturerProfileDto } from './dto/update-lecturer-profile.dto';
@@ -23,6 +25,8 @@ import { CurrentUser } from '../../common/decorators/current-user.decorator';
 import { Roles } from '../../common/decorators/roles.decorator';
 import { UserRole } from '@prisma/client';
 import { Public } from '../../common/decorators/public.decorator';
+import { CreateStudentDto } from './dto/create-student.dto';
+import { CreateEnrollmentDto } from './dto/create-enrollment.dto';
 
 @ApiTags('Lecturer')
 @Controller('lecturer')
@@ -103,5 +107,59 @@ export class LecturerController {
     @Query('limit', new DefaultValuePipe(10), ParseIntPipe) limit: number,
   ) {
     return this.lecturerService.getAllLecturers(page, limit);
+  }
+
+  @Post('students')
+  @Roles(UserRole.LECTURER)
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Create a new student account (lecturer only)' })
+  @ApiBody({ type: CreateStudentDto })
+  @ApiResponse({
+    status: 201,
+    description: 'Student account created successfully',
+  })
+  @ApiResponse({
+    status: 409,
+    description: 'Student with this email already exists',
+  })
+  @ApiResponse({
+    status: 403,
+    description: 'Only lecturers can create student accounts',
+  })
+  async createStudent(
+    @CurrentUser('id') lecturerId: string,
+    @Body() dto: CreateStudentDto,
+  ) {
+    return this.lecturerService.createStudent(lecturerId, dto);
+  }
+
+  @Post('enrollments')
+  @Roles(UserRole.LECTURER)
+  @ApiBearerAuth()
+  @ApiOperation({
+    summary: 'Directly enroll a student in a course (lecturer only)',
+  })
+  @ApiBody({ type: CreateEnrollmentDto })
+  @ApiResponse({
+    status: 201,
+    description: 'Student enrolled successfully',
+  })
+  @ApiResponse({
+    status: 404,
+    description: 'Student, course, or lecturer not found',
+  })
+  @ApiResponse({
+    status: 400,
+    description: 'Student already enrolled in this course',
+  })
+  @ApiResponse({
+    status: 403,
+    description: 'Not authorized to enroll students in this course',
+  })
+  async createEnrollment(
+    @CurrentUser('id') lecturerId: string,
+    @Body() dto: CreateEnrollmentDto,
+  ) {
+    return this.lecturerService.createEnrollment(lecturerId, dto);
   }
 }

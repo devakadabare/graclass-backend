@@ -58,7 +58,7 @@ export class UpdateCourseDto {
 
   @ApiPropertyOptional({
     description: 'Hourly rate in USD',
-    example: 75.00,
+    example: 75.0,
     minimum: 0,
   })
   @IsOptional()

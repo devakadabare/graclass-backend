@@ -123,11 +123,11 @@ export declare class StudentController {
         courseId: string;
         studentGroupId: string | null;
         type: import(".prisma/client").$Enums.ClassType;
+        notes: string | null;
         date: Date;
         startTime: string;
         endTime: string;
         location: string | null;
         meetingLink: string | null;
-        notes: string | null;
     })[]>;
 }

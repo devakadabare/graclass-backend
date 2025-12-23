@@ -89,7 +89,10 @@ export class ClassController {
     description: 'Class retrieved successfully',
   })
   @ApiResponse({ status: 404, description: 'Class not found' })
-  @ApiResponse({ status: 403, description: 'Not authorized to view this class' })
+  @ApiResponse({
+    status: 403,
+    description: 'Not authorized to view this class',
+  })
   async getClassById(
     @Param('id') id: string,
     @CurrentUser('id') userId: string,
@@ -111,7 +114,10 @@ export class ClassController {
     description: 'Class updated successfully',
   })
   @ApiResponse({ status: 404, description: 'Class not found' })
-  @ApiResponse({ status: 403, description: 'Not authorized to update this class' })
+  @ApiResponse({
+    status: 403,
+    description: 'Not authorized to update this class',
+  })
   async updateClass(
     @Param('id') id: string,
     @CurrentUser('id') userId: string,
@@ -134,7 +140,10 @@ export class ClassController {
     description: 'Class cancelled successfully',
   })
   @ApiResponse({ status: 404, description: 'Class not found' })
-  @ApiResponse({ status: 403, description: 'Not authorized to cancel this class' })
+  @ApiResponse({
+    status: 403,
+    description: 'Not authorized to cancel this class',
+  })
   async cancelClass(
     @Param('id') id: string,
     @CurrentUser('id') userId: string,
@@ -156,7 +165,10 @@ export class ClassController {
     description: 'Class deleted successfully',
   })
   @ApiResponse({ status: 404, description: 'Class not found' })
-  @ApiResponse({ status: 403, description: 'Not authorized to delete this class' })
+  @ApiResponse({
+    status: 403,
+    description: 'Not authorized to delete this class',
+  })
   async deleteClass(
     @Param('id') id: string,
     @CurrentUser('id') userId: string,

@@ -4,14 +4,8 @@ import {
   IsOptional,
   IsDateString,
   Matches,
-  IsEnum,
   IsUUID,
 } from 'class-validator';
-
-enum ClassType {
-  INDIVIDUAL = 'INDIVIDUAL',
-  GROUP = 'GROUP',
-}
 
 export class CreateClassDto {
   @ApiProperty({

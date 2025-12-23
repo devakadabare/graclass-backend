@@ -14,6 +14,7 @@ import { ClassModule } from './modules/class/class.module';
 import { DashboardModule } from './modules/dashboard/dashboard.module';
 import { EnrollmentModule } from './modules/enrollment/enrollment.module';
 import { GroupModule } from './modules/group/group.module';
+import { HealthModule } from './health/health.module';
 import { JwtAuthGuard } from './modules/auth/guards/jwt-auth.guard';
 import { RolesGuard } from './modules/auth/guards/roles.guard';
 
@@ -26,6 +27,8 @@ import { RolesGuard } from './modules/auth/guards/roles.guard';
     }),
     // Global Prisma module
     PrismaModule,
+    // Health check module
+    HealthModule,
     // Feature modules
     AuthModule,
     LecturerModule,

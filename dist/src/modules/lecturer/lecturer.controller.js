@@ -22,6 +22,8 @@ const current_user_decorator_1 = require("../../common/decorators/current-user.d
 const roles_decorator_1 = require("../../common/decorators/roles.decorator");
 const client_1 = require("@prisma/client");
 const public_decorator_1 = require("../../common/decorators/public.decorator");
+const create_student_dto_1 = require("./dto/create-student.dto");
+const create_enrollment_dto_1 = require("./dto/create-enrollment.dto");
 let LecturerController = class LecturerController {
     lecturerService;
     constructor(lecturerService) {
@@ -38,6 +40,12 @@ let LecturerController = class LecturerController {
     }
     async getAllLecturers(page, limit) {
         return this.lecturerService.getAllLecturers(page, limit);
+    }
+    async createStudent(lecturerId, dto) {
+        return this.lecturerService.createStudent(lecturerId, dto);
+    }
+    async createEnrollment(lecturerId, dto) {
+        return this.lecturerService.createEnrollment(lecturerId, dto);
     }
 };
 exports.LecturerController = LecturerController;
@@ -121,6 +129,60 @@ __decorate([
     __metadata("design:paramtypes", [Number, Number]),
     __metadata("design:returntype", Promise)
 ], LecturerController.prototype, "getAllLecturers", null);
+__decorate([
+    (0, common_1.Post)('students'),
+    (0, roles_decorator_1.Roles)(client_1.UserRole.LECTURER),
+    (0, swagger_1.ApiBearerAuth)(),
+    (0, swagger_1.ApiOperation)({ summary: 'Create a new student account (lecturer only)' }),
+    (0, swagger_1.ApiBody)({ type: create_student_dto_1.CreateStudentDto }),
+    (0, swagger_1.ApiResponse)({
+        status: 201,
+        description: 'Student account created successfully',
+    }),
+    (0, swagger_1.ApiResponse)({
+        status: 409,
+        description: 'Student with this email already exists',
+    }),
+    (0, swagger_1.ApiResponse)({
+        status: 403,
+        description: 'Only lecturers can create student accounts',
+    }),
+    __param(0, (0, current_user_decorator_1.CurrentUser)('id')),
+    __param(1, (0, common_1.Body)()),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [String, create_student_dto_1.CreateStudentDto]),
+    __metadata("design:returntype", Promise)
+], LecturerController.prototype, "createStudent", null);
+__decorate([
+    (0, common_1.Post)('enrollments'),
+    (0, roles_decorator_1.Roles)(client_1.UserRole.LECTURER),
+    (0, swagger_1.ApiBearerAuth)(),
+    (0, swagger_1.ApiOperation)({
+        summary: 'Directly enroll a student in a course (lecturer only)',
+    }),
+    (0, swagger_1.ApiBody)({ type: create_enrollment_dto_1.CreateEnrollmentDto }),
+    (0, swagger_1.ApiResponse)({
+        status: 201,
+        description: 'Student enrolled successfully',
+    }),
+    (0, swagger_1.ApiResponse)({
+        status: 404,
+        description: 'Student, course, or lecturer not found',
+    }),
+    (0, swagger_1.ApiResponse)({
+        status: 400,
+        description: 'Student already enrolled in this course',
+    }),
+    (0, swagger_1.ApiResponse)({
+        status: 403,
+        description: 'Not authorized to enroll students in this course',
+    }),
+    __param(0, (0, current_user_decorator_1.CurrentUser)('id')),
+    __param(1, (0, common_1.Body)()),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [String, create_enrollment_dto_1.CreateEnrollmentDto]),
+    __metadata("design:returntype", Promise)
+], LecturerController.prototype, "createEnrollment", null);
 exports.LecturerController = LecturerController = __decorate([
     (0, swagger_1.ApiTags)('Lecturer'),
     (0, common_1.Controller)('lecturer'),

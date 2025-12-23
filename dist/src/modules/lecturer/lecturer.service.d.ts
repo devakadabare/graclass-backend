@@ -1,5 +1,7 @@
 import { PrismaService } from '../../prisma/prisma.service';
 import { UpdateLecturerProfileDto } from './dto/update-lecturer-profile.dto';
+import { CreateStudentDto } from './dto/create-student.dto';
+import { CreateEnrollmentDto } from './dto/create-enrollment.dto';
 export declare class LecturerService {
     private readonly prisma;
     private readonly logger;
@@ -68,5 +70,38 @@ export declare class LecturerService {
             limit: number;
             totalPages: number;
         };
+    }>;
+    createStudent(lecturerId: string, dto: CreateStudentDto): Promise<{
+        id: string;
+        email: string;
+        firstName: string;
+        lastName: string;
+        phone: string | null;
+        university: string | null;
+        studentId: string | null;
+    }>;
+    createEnrollment(lecturerId: string, dto: CreateEnrollmentDto): Promise<{
+        student: {
+            id: string;
+            firstName: string;
+            lastName: string;
+        } | null;
+        course: {
+            name: string;
+            subject: string;
+        };
+        studentGroup: {
+            id: string;
+            name: string;
+        } | null;
+    } & {
+        id: string;
+        studentId: string | null;
+        status: import(".prisma/client").$Enums.EnrollmentStatus;
+        requestedAt: Date;
+        approvedAt: Date | null;
+        rejectedAt: Date | null;
+        courseId: string;
+        studentGroupId: string | null;
     }>;
 }

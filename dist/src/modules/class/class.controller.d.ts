@@ -14,12 +14,12 @@ export declare class ClassController {
         courseId: string;
         studentGroupId: string | null;
         type: import(".prisma/client").$Enums.ClassType;
+        notes: string | null;
         date: Date;
         startTime: string;
         endTime: string;
         location: string | null;
         meetingLink: string | null;
-        notes: string | null;
     }>;
     getMyClasses(userId: string, status?: string, fromDate?: string): Promise<({
         student: {
@@ -43,12 +43,12 @@ export declare class ClassController {
         courseId: string;
         studentGroupId: string | null;
         type: import(".prisma/client").$Enums.ClassType;
+        notes: string | null;
         date: Date;
         startTime: string;
         endTime: string;
         location: string | null;
         meetingLink: string | null;
-        notes: string | null;
     })[]>;
     getClassById(id: string, userId: string): Promise<{
         lecturer: {
@@ -84,12 +84,12 @@ export declare class ClassController {
         courseId: string;
         studentGroupId: string | null;
         type: import(".prisma/client").$Enums.ClassType;
+        notes: string | null;
         date: Date;
         startTime: string;
         endTime: string;
         location: string | null;
         meetingLink: string | null;
-        notes: string | null;
     }>;
     updateClass(id: string, userId: string, dto: UpdateClassDto): Promise<{
         id: string;
@@ -101,12 +101,12 @@ export declare class ClassController {
         courseId: string;
         studentGroupId: string | null;
         type: import(".prisma/client").$Enums.ClassType;
+        notes: string | null;
         date: Date;
         startTime: string;
         endTime: string;
         location: string | null;
         meetingLink: string | null;
-        notes: string | null;
     }>;
     cancelClass(id: string, userId: string): Promise<{
         id: string;
@@ -118,12 +118,12 @@ export declare class ClassController {
         courseId: string;
         studentGroupId: string | null;
         type: import(".prisma/client").$Enums.ClassType;
+        notes: string | null;
         date: Date;
         startTime: string;
         endTime: string;
         location: string | null;
         meetingLink: string | null;
-        notes: string | null;
     }>;
     deleteClass(id: string, userId: string): Promise<{
         message: string;
