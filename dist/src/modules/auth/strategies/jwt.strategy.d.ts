@@ -19,6 +19,7 @@ export declare class JwtStrategy extends JwtStrategy_base {
             bio: string | null;
             qualifications: string | null;
             profilePicture: string | null;
+            profileImage: string | null;
             userId: string;
         } | null;
         student: {
@@ -29,6 +30,7 @@ export declare class JwtStrategy extends JwtStrategy_base {
             lastName: string;
             phone: string | null;
             profilePicture: string | null;
+            profileImage: string | null;
             university: string | null;
             studentId: string | null;
             userId: string;

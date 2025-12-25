@@ -5,15 +5,23 @@ import {
   Logger,
 } from '@nestjs/common';
 import { PrismaService } from '../../prisma/prisma.service';
+import { S3Service } from '../../common/services/s3.service';
 import { UpdateStudentProfileDto } from './dto/update-student-profile.dto';
 import { EnrollCourseDto } from './dto/enroll-course.dto';
 import { EnrollmentStatus } from '@prisma/client';
+import {
+  generateProfileImageKey,
+  validateFileSize,
+} from '../../common/utils/file-upload.util';
 
 @Injectable()
 export class StudentService {
   private readonly logger = new Logger(StudentService.name);
 
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly s3Service: S3Service,
+  ) {}
 
   /**
    * Get student profile by user ID
@@ -30,8 +38,18 @@ export class StudentService {
       throw new NotFoundException('Student profile not found');
     }
 
+    // Generate signed URL for profile image if it exists
+    let profileImageUrl = user.student.profileImage;
+    if (profileImageUrl) {
+      const key = this.s3Service.extractKeyFromUrl(profileImageUrl);
+      if (key) {
+        profileImageUrl = await this.s3Service.getSignedUrl(key, 86400); // 24 hours
+      }
+    }
+
     return {
       ...user.student,
+      profileImage: profileImageUrl,
       email: user.email,
       isActive: user.isActive,
       isEmailVerified: user.isEmailVerified,
@@ -43,7 +61,11 @@ export class StudentService {
   /**
    * Update student profile
    */
-  async updateProfile(userId: string, dto: UpdateStudentProfileDto) {
+  async updateProfile(
+    userId: string,
+    dto: UpdateStudentProfileDto,
+    file?: Express.Multer.File,
+  ) {
     const user = await this.prisma.user.findUnique({
       where: { id: userId },
       include: { student: true },
@@ -53,15 +75,62 @@ export class StudentService {
       throw new NotFoundException('Student profile not found');
     }
 
+    let profileImageUrl = dto.profileImage;
+
+    // Handle file upload if provided
+    if (file) {
+      // Validate file
+      validateFileSize(file, 5); // 5MB max
+
+      // Delete old profile image if exists
+      if (user.student.profileImage) {
+        const oldKey = this.s3Service.extractKeyFromUrl(
+          user.student.profileImage,
+        );
+        if (oldKey) {
+          await this.s3Service.deleteFile(oldKey).catch((err) => {
+            this.logger.warn(
+              `Failed to delete old profile image: ${err.message}`,
+            );
+          });
+        }
+      }
+
+      // Upload new image
+      const key = generateProfileImageKey(
+        'students',
+        user.student.id,
+        file.originalname,
+      );
+      profileImageUrl = await this.s3Service.uploadFile(
+        file.buffer,
+        key,
+        file.mimetype,
+      );
+    }
+
     const updatedStudent = await this.prisma.student.update({
       where: { id: user.student.id },
-      data: dto,
+      data: {
+        ...dto,
+        profileImage: profileImageUrl,
+      },
     });
 
     this.logger.log(`Student profile updated: ${user.email}`);
 
+    // Generate signed URL for profile image if it exists
+    let signedProfileImageUrl = profileImageUrl;
+    if (profileImageUrl) {
+      const key = this.s3Service.extractKeyFromUrl(profileImageUrl);
+      if (key) {
+        signedProfileImageUrl = await this.s3Service.getSignedUrl(key, 86400); // 24 hours
+      }
+    }
+
     return {
       ...updatedStudent,
+      profileImage: signedProfileImageUrl,
       email: user.email,
       isActive: user.isActive,
       isEmailVerified: user.isEmailVerified,

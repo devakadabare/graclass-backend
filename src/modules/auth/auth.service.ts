@@ -7,6 +7,7 @@ import {
 import { JwtService } from '@nestjs/jwt';
 import { ConfigService } from '@nestjs/config';
 import { PrismaService } from '../../prisma/prisma.service';
+import { S3Service } from '../../common/services/s3.service';
 import * as bcrypt from 'bcrypt';
 import { RegisterLecturerDto } from './dto/register-lecturer.dto';
 import { RegisterStudentDto } from './dto/register-student.dto';
@@ -21,6 +22,7 @@ export class AuthService {
     private readonly prisma: PrismaService,
     private readonly jwtService: JwtService,
     private readonly configService: ConfigService,
+    private readonly s3Service: S3Service,
   ) {}
 
   /**
@@ -67,6 +69,17 @@ export class AuthService {
     // Generate tokens
     const tokens = await this.generateTokens(user.id, user.email, user.role);
 
+    // Generate signed URL for profile image if it exists
+    let profileImageUrl: string | undefined = undefined;
+    if (user.lecturer!.profileImage) {
+      try {
+        const key = this.s3Service.extractKeyFromUrl(user.lecturer!.profileImage);
+        profileImageUrl = await this.s3Service.getSignedUrl(key, 86400); // 24 hours
+      } catch (error) {
+        this.logger.warn(`Failed to generate signed URL for profile image: ${error.message}`);
+      }
+    }
+
     return {
       ...tokens,
       user: {
@@ -75,6 +88,7 @@ export class AuthService {
         role: user.role,
         firstName: user.lecturer!.firstName,
         lastName: user.lecturer!.lastName,
+        profileImage: profileImageUrl,
       },
     };
   }
@@ -123,6 +137,17 @@ export class AuthService {
     // Generate tokens
     const tokens = await this.generateTokens(user.id, user.email, user.role);
 
+    // Generate signed URL for profile image if it exists
+    let profileImageUrl: string | undefined = undefined;
+    if (user.student!.profileImage) {
+      try {
+        const key = this.s3Service.extractKeyFromUrl(user.student!.profileImage);
+        profileImageUrl = await this.s3Service.getSignedUrl(key, 86400); // 24 hours
+      } catch (error) {
+        this.logger.warn(`Failed to generate signed URL for profile image: ${error.message}`);
+      }
+    }
+
     return {
       ...tokens,
       user: {
@@ -131,6 +156,7 @@ export class AuthService {
         role: user.role,
         firstName: user.student!.firstName,
         lastName: user.student!.lastName,
+        profileImage: profileImageUrl,
       },
     };
   }
@@ -171,13 +197,32 @@ export class AuthService {
     // Get profile data based on role
     let firstName = '';
     let lastName = '';
+    let profileImage: string | undefined = undefined;
 
     if (user.role === UserRole.LECTURER && user.lecturer) {
       firstName = user.lecturer.firstName;
       lastName = user.lecturer.lastName;
+      // Generate signed URL for profile image if it exists
+      if (user.lecturer.profileImage) {
+        try {
+          const key = this.s3Service.extractKeyFromUrl(user.lecturer.profileImage);
+          profileImage = await this.s3Service.getSignedUrl(key, 86400); // 24 hours
+        } catch (error) {
+          this.logger.warn(`Failed to generate signed URL for profile image: ${error.message}`);
+        }
+      }
     } else if (user.role === UserRole.STUDENT && user.student) {
       firstName = user.student.firstName;
       lastName = user.student.lastName;
+      // Generate signed URL for profile image if it exists
+      if (user.student.profileImage) {
+        try {
+          const key = this.s3Service.extractKeyFromUrl(user.student.profileImage);
+          profileImage = await this.s3Service.getSignedUrl(key, 86400); // 24 hours
+        } catch (error) {
+          this.logger.warn(`Failed to generate signed URL for profile image: ${error.message}`);
+        }
+      }
     } else if (user.role === UserRole.ADMIN) {
       firstName = 'Admin';
       lastName = 'User';
@@ -191,6 +236,7 @@ export class AuthService {
         role: user.role,
         firstName,
         lastName,
+        profileImage,
       },
     };
   }

@@ -52,6 +52,7 @@ export declare class AdminService {
             bio: string | null;
             qualifications: string | null;
             profilePicture: string | null;
+            profileImage: string | null;
             userId: string;
         }) | null;
         student: ({
@@ -67,6 +68,7 @@ export declare class AdminService {
             lastName: string;
             phone: string | null;
             profilePicture: string | null;
+            profileImage: string | null;
             university: string | null;
             studentId: string | null;
             userId: string;
@@ -133,6 +135,7 @@ export declare class AdminService {
             level: string | null;
             duration: number;
             hourlyRate: import("@prisma/client/runtime/library").Decimal;
+            flyer: string | null;
             lecturerId: string;
         })[];
         meta: {

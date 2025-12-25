@@ -48,4 +48,12 @@ export class UpdateLecturerProfileDto {
   @IsOptional()
   @IsString()
   qualifications?: string;
+
+  @ApiPropertyOptional({
+    description: 'Profile image URL (uploaded to S3)',
+    example: 'https://bucket.s3.region.amazonaws.com/lecturers/id/profile/images/image.jpg',
+  })
+  @IsOptional()
+  @IsString()
+  profileImage?: string;
 }

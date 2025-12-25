@@ -18,6 +18,7 @@ class UpdateStudentProfileDto {
     phone;
     university;
     studentId;
+    profileImage;
 }
 exports.UpdateStudentProfileDto = UpdateStudentProfileDto;
 __decorate([
@@ -52,4 +53,13 @@ __decorate([
     (0, class_validator_1.IsString)(),
     __metadata("design:type", String)
 ], UpdateStudentProfileDto.prototype, "studentId", void 0);
+__decorate([
+    (0, swagger_1.ApiProperty)({
+        example: 'https://bucket.s3.region.amazonaws.com/students/id/profile/images/image.jpg',
+        required: false,
+    }),
+    (0, class_validator_1.IsOptional)(),
+    (0, class_validator_1.IsString)(),
+    __metadata("design:type", String)
+], UpdateStudentProfileDto.prototype, "profileImage", void 0);
 //# sourceMappingURL=update-student-profile.dto.js.map

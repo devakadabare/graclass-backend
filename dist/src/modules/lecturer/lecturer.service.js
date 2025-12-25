@@ -46,13 +46,17 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.LecturerService = void 0;
 const common_1 = require("@nestjs/common");
 const prisma_service_1 = require("../../prisma/prisma.service");
+const s3_service_1 = require("../../common/services/s3.service");
 const bcrypt = __importStar(require("bcrypt"));
 const client_1 = require("@prisma/client");
+const file_upload_util_1 = require("../../common/utils/file-upload.util");
 let LecturerService = LecturerService_1 = class LecturerService {
     prisma;
+    s3Service;
     logger = new common_1.Logger(LecturerService_1.name);
-    constructor(prisma) {
+    constructor(prisma, s3Service) {
         this.prisma = prisma;
+        this.s3Service = s3Service;
     }
     async getProfile(userId) {
         const user = await this.prisma.user.findUnique({
@@ -64,8 +68,16 @@ let LecturerService = LecturerService_1 = class LecturerService {
         if (!user || !user.lecturer) {
             throw new common_1.NotFoundException('Lecturer profile not found');
         }
+        let profileImageUrl = user.lecturer.profileImage;
+        if (profileImageUrl) {
+            const key = this.s3Service.extractKeyFromUrl(profileImageUrl);
+            if (key) {
+                profileImageUrl = await this.s3Service.getSignedUrl(key, 86400);
+            }
+        }
         return {
             ...user.lecturer,
+            profileImage: profileImageUrl,
             email: user.email,
             isActive: user.isActive,
             isEmailVerified: user.isEmailVerified,
@@ -114,13 +126,27 @@ let LecturerService = LecturerService_1 = class LecturerService {
             courses: lecturer.courses,
         };
     }
-    async updateProfile(userId, dto) {
+    async updateProfile(userId, dto, file) {
         const user = await this.prisma.user.findUnique({
             where: { id: userId },
             include: { lecturer: true },
         });
         if (!user || !user.lecturer) {
             throw new common_1.NotFoundException('Lecturer profile not found');
+        }
+        let profileImageUrl = dto.profileImage;
+        if (file) {
+            (0, file_upload_util_1.validateFileSize)(file, 5);
+            if (user.lecturer.profileImage) {
+                const oldKey = this.s3Service.extractKeyFromUrl(user.lecturer.profileImage);
+                if (oldKey) {
+                    await this.s3Service.deleteFile(oldKey).catch((err) => {
+                        this.logger.warn(`Failed to delete old profile image: ${err.message}`);
+                    });
+                }
+            }
+            const key = (0, file_upload_util_1.generateProfileImageKey)('lecturers', user.lecturer.id, file.originalname);
+            profileImageUrl = await this.s3Service.uploadFile(file.buffer, key, file.mimetype);
         }
         const updatedLecturer = await this.prisma.lecturer.update({
             where: { id: user.lecturer.id },
@@ -130,17 +156,31 @@ let LecturerService = LecturerService_1 = class LecturerService {
                 phone: dto.phone,
                 bio: dto.bio,
                 qualifications: dto.qualifications,
+                profileImage: profileImageUrl,
             },
         });
         this.logger.log(`Lecturer profile updated: ${user.email}`);
-        return {
+        let signedProfileImageUrl = profileImageUrl;
+        if (profileImageUrl) {
+            const key = this.s3Service.extractKeyFromUrl(profileImageUrl);
+            if (key) {
+                signedProfileImageUrl = await this.s3Service.getSignedUrl(key, 86400);
+            }
+        }
+        const response = {
             ...updatedLecturer,
+            profileImage: signedProfileImageUrl,
             email: user.email,
             isActive: user.isActive,
             isEmailVerified: user.isEmailVerified,
             createdAt: user.createdAt,
             updatedAt: user.updatedAt,
         };
+        console.log('=== LECTURER SERVICE RESPONSE ===');
+        console.log('Profile Image URL:', response.profileImage);
+        console.log('Full Response:', JSON.stringify(response, null, 2));
+        console.log('=================================');
+        return response;
     }
     async getAllLecturers(page = 1, limit = 10) {
         const skip = (page - 1) * limit;
@@ -339,6 +379,7 @@ let LecturerService = LecturerService_1 = class LecturerService {
 exports.LecturerService = LecturerService;
 exports.LecturerService = LecturerService = LecturerService_1 = __decorate([
     (0, common_1.Injectable)(),
-    __metadata("design:paramtypes", [prisma_service_1.PrismaService])
+    __metadata("design:paramtypes", [prisma_service_1.PrismaService,
+        s3_service_1.S3Service])
 ], LecturerService);
 //# sourceMappingURL=lecturer.service.js.map

@@ -8,7 +8,11 @@ import {
   Query,
   ParseIntPipe,
   DefaultValuePipe,
+  UploadedFile,
+  UseInterceptors,
+  BadRequestException,
 } from '@nestjs/common';
+import { FileInterceptor } from '@nestjs/platform-express';
 import {
   ApiTags,
   ApiOperation,
@@ -17,6 +21,7 @@ import {
   ApiParam,
   ApiQuery,
   ApiBody,
+  ApiConsumes,
 } from '@nestjs/swagger';
 import { LecturerService } from './lecturer.service';
 import { UpdateLecturerProfileDto } from './dto/update-lecturer-profile.dto';
@@ -50,7 +55,9 @@ export class LecturerController {
   @Put('profile')
   @Roles(UserRole.LECTURER)
   @ApiBearerAuth()
+  @UseInterceptors(FileInterceptor('profileImage'))
   @ApiOperation({ summary: 'Update lecturer profile' })
+  @ApiConsumes('multipart/form-data')
   @ApiResponse({
     status: 200,
     description: 'Profile updated successfully',
@@ -60,8 +67,18 @@ export class LecturerController {
   async updateProfile(
     @CurrentUser('id') userId: string,
     @Body() dto: UpdateLecturerProfileDto,
+    @UploadedFile() file?: Express.Multer.File,
   ) {
-    return this.lecturerService.updateProfile(userId, dto);
+    console.log('=== UPDATE PROFILE REQUEST ===');
+    console.log('User ID:', userId);
+    console.log('DTO:', dto);
+    console.log('File received:', file ? {
+      originalname: file.originalname,
+      mimetype: file.mimetype,
+      size: file.size
+    } : 'NO FILE');
+    console.log('==============================');
+    return this.lecturerService.updateProfile(userId, dto, file);
   }
 
   @Public()

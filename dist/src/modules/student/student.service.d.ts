@@ -1,12 +1,15 @@
 import { PrismaService } from '../../prisma/prisma.service';
+import { S3Service } from '../../common/services/s3.service';
 import { UpdateStudentProfileDto } from './dto/update-student-profile.dto';
 import { EnrollCourseDto } from './dto/enroll-course.dto';
 import { EnrollmentStatus } from '@prisma/client';
 export declare class StudentService {
     private readonly prisma;
+    private readonly s3Service;
     private readonly logger;
-    constructor(prisma: PrismaService);
+    constructor(prisma: PrismaService, s3Service: S3Service);
     getProfile(userId: string): Promise<{
+        profileImage: string | null;
         email: string;
         isActive: boolean;
         isEmailVerified: boolean;
@@ -21,7 +24,8 @@ export declare class StudentService {
         studentId: string | null;
         userId: string;
     }>;
-    updateProfile(userId: string, dto: UpdateStudentProfileDto): Promise<{
+    updateProfile(userId: string, dto: UpdateStudentProfileDto, file?: Express.Multer.File): Promise<{
+        profileImage: string | undefined;
         email: string;
         isActive: boolean;
         isEmailVerified: boolean;
@@ -102,6 +106,7 @@ export declare class StudentService {
             level: string | null;
             duration: number;
             hourlyRate: import("@prisma/client/runtime/library").Decimal;
+            flyer: string | null;
             lecturerId: string;
         };
     }[]>;

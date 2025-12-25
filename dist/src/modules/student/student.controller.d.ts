@@ -6,6 +6,7 @@ export declare class StudentController {
     private readonly studentService;
     constructor(studentService: StudentService);
     getMyProfile(userId: string): Promise<{
+        profileImage: string | null;
         email: string;
         isActive: boolean;
         isEmailVerified: boolean;
@@ -20,7 +21,8 @@ export declare class StudentController {
         studentId: string | null;
         userId: string;
     }>;
-    updateProfile(userId: string, dto: UpdateStudentProfileDto): Promise<{
+    updateProfile(userId: string, dto: UpdateStudentProfileDto, file?: Express.Multer.File): Promise<{
+        profileImage: string | undefined;
         email: string;
         isActive: boolean;
         isEmailVerified: boolean;
@@ -101,6 +103,7 @@ export declare class StudentController {
             level: string | null;
             duration: number;
             hourlyRate: import("@prisma/client/runtime/library").Decimal;
+            flyer: string | null;
             lecturerId: string;
         };
     }[]>;

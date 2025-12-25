@@ -16,6 +16,7 @@ export declare class CourseService {
         level: string | null;
         duration: number;
         hourlyRate: import("@prisma/client/runtime/library").Decimal;
+        flyer: string | null;
         lecturerId: string;
     }>;
     getLecturerCourses(userId: string, includeInactive?: boolean): Promise<{
@@ -35,6 +36,7 @@ export declare class CourseService {
         level: string | null;
         duration: number;
         hourlyRate: import("@prisma/client/runtime/library").Decimal;
+        flyer: string | null;
         lecturerId: string;
     }[]>;
     getCourseById(courseId: string, userId?: string): Promise<{
@@ -55,6 +57,7 @@ export declare class CourseService {
             bio: string | null;
             qualifications: string | null;
             profilePicture: string | null;
+            profileImage: string | null;
             userId: string;
         };
         _count: {
@@ -71,6 +74,7 @@ export declare class CourseService {
         level: string | null;
         duration: number;
         hourlyRate: import("@prisma/client/runtime/library").Decimal;
+        flyer: string | null;
         lecturerId: string;
     } | {
         id: string;
@@ -100,6 +104,7 @@ export declare class CourseService {
         level: string | null;
         duration: number;
         hourlyRate: import("@prisma/client/runtime/library").Decimal;
+        flyer: string | null;
         lecturerId: string;
     }>;
     deleteCourse(courseId: string, userId: string): Promise<{

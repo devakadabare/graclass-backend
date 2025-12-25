@@ -7,6 +7,8 @@ export declare class CourseResponseDto {
     level?: string;
     duration: number;
     hourlyRate: number;
+    flyer?: string;
+    images?: string[];
     isActive: boolean;
     createdAt: Date;
     updatedAt: Date;

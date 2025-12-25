@@ -6,6 +6,7 @@ export declare class LecturerController {
     private readonly lecturerService;
     constructor(lecturerService: LecturerService);
     getMyProfile(userId: string): Promise<{
+        profileImage: string | null;
         email: string;
         isActive: boolean;
         isEmailVerified: boolean;
@@ -20,7 +21,8 @@ export declare class LecturerController {
         profilePicture: string | null;
         userId: string;
     }>;
-    updateProfile(userId: string, dto: UpdateLecturerProfileDto): Promise<{
+    updateProfile(userId: string, dto: UpdateLecturerProfileDto, file?: Express.Multer.File): Promise<{
+        profileImage: string | undefined;
         email: string;
         isActive: boolean;
         isEmailVerified: boolean;

@@ -8,10 +8,7 @@ generator client {
 
 datasource db {
   provider = "mysql"
-  // Connection URLs are no longer supported in schema files.
-  // Move your connection configuration for Migrate to prisma.config.ts
-  // and pass `adapter` or `accelerateUrl` to PrismaClient as described:
-  // https://pris.ly/d/config-datasource
+  url      = env("DATABASE_URL")
 }
 
 // ================================
@@ -75,16 +72,17 @@ model User {
 // ================================
 
 model Lecturer {
-  id              String   @id @default(uuid())
-  userId          String   @unique
-  firstName       String
-  lastName        String
-  phone           String?
-  bio             String?  @db.Text
-  qualifications  String?  @db.Text
-  profilePicture  String?
-  createdAt       DateTime @default(now())
-  updatedAt       DateTime @updatedAt
+  id             String   @id @default(uuid())
+  userId         String   @unique
+  firstName      String
+  lastName       String
+  phone          String?
+  bio            String?  @db.Text
+  qualifications String?  @db.Text
+  profilePicture String?
+  profileImage   String?
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
 
   // Relations
   user           User           @relation(fields: [userId], references: [id], onDelete: Cascade)
@@ -100,10 +98,10 @@ model Lecturer {
 model Availability {
   id           String    @id @default(uuid())
   lecturerId   String
-  dayOfWeek    Int?      // 0-6 (Sunday-Saturday) for recurring
+  dayOfWeek    Int? // 0-6 (Sunday-Saturday) for recurring
   specificDate DateTime? @db.Date // For one-time availability
-  startTime    String    // HH:mm format
-  endTime      String    // HH:mm format
+  startTime    String // HH:mm format
+  endTime      String // HH:mm format
   isRecurring  Boolean   @default(false)
   createdAt    DateTime  @default(now())
   updatedAt    DateTime  @updatedAt
@@ -130,6 +128,7 @@ model Student {
   university     String?
   studentId      String?
   profilePicture String?
+  profileImage   String?
   createdAt      DateTime @default(now())
   updatedAt      DateTime @updatedAt
 
@@ -155,9 +154,9 @@ model StudentGroup {
   updatedAt   DateTime @updatedAt
 
   // Relations
-  creator      Student             @relation("GroupCreator", fields: [createdBy], references: [id])
-  enrollments  GroupEnrollment[]
-  classes      Class[]             @relation("GroupClasses")
+  creator       Student            @relation("GroupCreator", fields: [createdBy], references: [id])
+  enrollments   GroupEnrollment[]
+  classes       Class[]            @relation("GroupClasses")
   courseEnrolls CourseEnrollment[]
 
   @@index([createdBy])
@@ -195,8 +194,9 @@ model Course {
   description String?  @db.Text
   subject     String
   level       String?
-  duration    Int      // Duration in minutes
+  duration    Int // Duration in minutes
   hourlyRate  Decimal  @db.Decimal(10, 2)
+  flyer       String? // S3 URL for course flyer/banner image
   isActive    Boolean  @default(true)
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
@@ -206,11 +206,26 @@ model Course {
   classes     Class[]
   enrollments CourseEnrollment[]
   contents    Content[]
+  images      CourseImage[]
 
   @@index([lecturerId])
   @@index([isActive])
   @@index([subject])
   @@map("courses")
+}
+
+model CourseImage {
+  id        String   @id @default(uuid())
+  courseId  String
+  imageUrl  String // S3 URL for the image
+  order     Int      @default(0) // Display order
+  createdAt DateTime @default(now())
+
+  // Relations
+  course Course @relation(fields: [courseId], references: [id], onDelete: Cascade)
+
+  @@index([courseId])
+  @@map("course_images")
 }
 
 model CourseEnrollment {
@@ -248,8 +263,8 @@ model Class {
   studentId      String?
   studentGroupId String?
   date           DateTime    @db.Date
-  startTime      String      // HH:mm format
-  endTime        String      // HH:mm format
+  startTime      String // HH:mm format
+  endTime        String // HH:mm format
   type           ClassType   @default(VISITING)
   status         ClassStatus @default(SCHEDULED)
   location       String?
@@ -312,7 +327,7 @@ model Content {
   description String?  @db.Text
   fileUrl     String
   fileType    String
-  fileSize    Int?     // Size in bytes
+  fileSize    Int? // Size in bytes
   uploadedAt  DateTime @default(now())
   updatedAt   DateTime @updatedAt
 

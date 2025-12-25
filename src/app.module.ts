@@ -4,6 +4,7 @@ import { APP_GUARD } from '@nestjs/core';
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
 import { PrismaModule } from './prisma/prisma.module';
+import { CommonModule } from './common/common.module';
 import { AuthModule } from './modules/auth/auth.module';
 import { LecturerModule } from './modules/lecturer/lecturer.module';
 import { StudentModule } from './modules/student/student.module';
@@ -27,6 +28,8 @@ import { RolesGuard } from './modules/auth/guards/roles.guard';
     }),
     // Global Prisma module
     PrismaModule,
+    // Global Common module
+    CommonModule,
     // Health check module
     HealthModule,
     // Feature modules

@@ -1,10 +1,21 @@
-import { Controller, Get, Put, Post, Body, Query } from '@nestjs/common';
+import {
+  Controller,
+  Get,
+  Put,
+  Post,
+  Body,
+  Query,
+  UploadedFile,
+  UseInterceptors,
+} from '@nestjs/common';
+import { FileInterceptor } from '@nestjs/platform-express';
 import {
   ApiTags,
   ApiOperation,
   ApiResponse,
   ApiBearerAuth,
   ApiQuery,
+  ApiConsumes,
 } from '@nestjs/swagger';
 import { StudentService } from './student.service';
 import { UpdateStudentProfileDto } from './dto/update-student-profile.dto';
@@ -32,7 +43,9 @@ export class StudentController {
   }
 
   @Put('profile')
+  @UseInterceptors(FileInterceptor('profileImage'))
   @ApiOperation({ summary: 'Update student profile' })
+  @ApiConsumes('multipart/form-data')
   @ApiResponse({
     status: 200,
     description: 'Profile updated successfully',
@@ -41,8 +54,9 @@ export class StudentController {
   async updateProfile(
     @CurrentUser('id') userId: string,
     @Body() dto: UpdateStudentProfileDto,
+    @UploadedFile() file?: Express.Multer.File,
   ) {
-    return this.studentService.updateProfile(userId, dto);
+    return this.studentService.updateProfile(userId, dto, file);
   }
 
   @Post('enroll')

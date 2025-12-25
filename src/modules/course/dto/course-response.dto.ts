@@ -59,6 +59,21 @@ export class CourseResponseDto {
   @Expose()
   hourlyRate: number;
 
+  @ApiPropertyOptional({
+    description: 'Course flyer/banner image URL',
+    example: 'https://bucket.s3.region.amazonaws.com/courses/course-id/flyer.jpg',
+  })
+  @Expose()
+  flyer?: string;
+
+  @ApiPropertyOptional({
+    description: 'Array of course image URLs',
+    example: ['https://bucket.s3.region.amazonaws.com/courses/course-id/image1.jpg'],
+    type: [String],
+  })
+  @Expose()
+  images?: string[];
+
   @ApiProperty({
     description: 'Whether the course is active',
     example: true,

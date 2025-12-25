@@ -28,4 +28,12 @@ export class UpdateStudentProfileDto {
   @IsOptional()
   @IsString()
   studentId?: string;
+
+  @ApiProperty({
+    example: 'https://bucket.s3.region.amazonaws.com/students/id/profile/images/image.jpg',
+    required: false,
+  })
+  @IsOptional()
+  @IsString()
+  profileImage?: string;
 }

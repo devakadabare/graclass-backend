@@ -4,4 +4,5 @@ export declare class UpdateLecturerProfileDto {
     phone?: string;
     bio?: string;
     qualifications?: string;
+    profileImage?: string;
 }

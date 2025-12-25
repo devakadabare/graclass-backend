@@ -14,6 +14,7 @@ var __param = (this && this.__param) || function (paramIndex, decorator) {
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.LecturerController = void 0;
 const common_1 = require("@nestjs/common");
+const platform_express_1 = require("@nestjs/platform-express");
 const swagger_1 = require("@nestjs/swagger");
 const lecturer_service_1 = require("./lecturer.service");
 const update_lecturer_profile_dto_1 = require("./dto/update-lecturer-profile.dto");
@@ -32,8 +33,17 @@ let LecturerController = class LecturerController {
     async getMyProfile(userId) {
         return this.lecturerService.getProfile(userId);
     }
-    async updateProfile(userId, dto) {
-        return this.lecturerService.updateProfile(userId, dto);
+    async updateProfile(userId, dto, file) {
+        console.log('=== UPDATE PROFILE REQUEST ===');
+        console.log('User ID:', userId);
+        console.log('DTO:', dto);
+        console.log('File received:', file ? {
+            originalname: file.originalname,
+            mimetype: file.mimetype,
+            size: file.size
+        } : 'NO FILE');
+        console.log('==============================');
+        return this.lecturerService.updateProfile(userId, dto, file);
     }
     async getPublicProfile(lecturerId) {
         return this.lecturerService.getPublicProfile(lecturerId);
@@ -69,7 +79,9 @@ __decorate([
     (0, common_1.Put)('profile'),
     (0, roles_decorator_1.Roles)(client_1.UserRole.LECTURER),
     (0, swagger_1.ApiBearerAuth)(),
+    (0, common_1.UseInterceptors)((0, platform_express_1.FileInterceptor)('profileImage')),
     (0, swagger_1.ApiOperation)({ summary: 'Update lecturer profile' }),
+    (0, swagger_1.ApiConsumes)('multipart/form-data'),
     (0, swagger_1.ApiResponse)({
         status: 200,
         description: 'Profile updated successfully',
@@ -78,8 +90,9 @@ __decorate([
     (0, swagger_1.ApiResponse)({ status: 404, description: 'Profile not found' }),
     __param(0, (0, current_user_decorator_1.CurrentUser)('id')),
     __param(1, (0, common_1.Body)()),
+    __param(2, (0, common_1.UploadedFile)()),
     __metadata("design:type", Function),
-    __metadata("design:paramtypes", [String, update_lecturer_profile_dto_1.UpdateLecturerProfileDto]),
+    __metadata("design:paramtypes", [String, update_lecturer_profile_dto_1.UpdateLecturerProfileDto, Object]),
     __metadata("design:returntype", Promise)
 ], LecturerController.prototype, "updateProfile", null);
 __decorate([

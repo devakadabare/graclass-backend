@@ -21,6 +21,8 @@ let CourseResponseDto = class CourseResponseDto {
     level;
     duration;
     hourlyRate;
+    flyer;
+    images;
     isActive;
     createdAt;
     updatedAt;
@@ -90,6 +92,23 @@ __decorate([
     (0, class_transformer_1.Expose)(),
     __metadata("design:type", Number)
 ], CourseResponseDto.prototype, "hourlyRate", void 0);
+__decorate([
+    (0, swagger_1.ApiPropertyOptional)({
+        description: 'Course flyer/banner image URL',
+        example: 'https://bucket.s3.region.amazonaws.com/courses/course-id/flyer.jpg',
+    }),
+    (0, class_transformer_1.Expose)(),
+    __metadata("design:type", String)
+], CourseResponseDto.prototype, "flyer", void 0);
+__decorate([
+    (0, swagger_1.ApiPropertyOptional)({
+        description: 'Array of course image URLs',
+        example: ['https://bucket.s3.region.amazonaws.com/courses/course-id/image1.jpg'],
+        type: [String],
+    }),
+    (0, class_transformer_1.Expose)(),
+    __metadata("design:type", Array)
+], CourseResponseDto.prototype, "images", void 0);
 __decorate([
     (0, swagger_1.ApiProperty)({
         description: 'Whether the course is active',

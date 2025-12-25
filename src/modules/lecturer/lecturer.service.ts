@@ -7,17 +7,26 @@ import {
   BadRequestException,
 } from '@nestjs/common';
 import { PrismaService } from '../../prisma/prisma.service';
+import { S3Service } from '../../common/services/s3.service';
 import { UpdateLecturerProfileDto } from './dto/update-lecturer-profile.dto';
 import { CreateStudentDto } from './dto/create-student.dto';
 import { CreateEnrollmentDto } from './dto/create-enrollment.dto';
 import * as bcrypt from 'bcrypt';
 import { UserRole, EnrollmentStatus } from '@prisma/client';
+import {
+  imageFileFilter,
+  generateProfileImageKey,
+  validateFileSize,
+} from '../../common/utils/file-upload.util';
 
 @Injectable()
 export class LecturerService {
   private readonly logger = new Logger(LecturerService.name);
 
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly s3Service: S3Service,
+  ) {}
 
   /**
    * Get lecturer profile by user ID
@@ -34,8 +43,18 @@ export class LecturerService {
       throw new NotFoundException('Lecturer profile not found');
     }
 
+    // Generate signed URL for profile image if it exists
+    let profileImageUrl = user.lecturer.profileImage;
+    if (profileImageUrl) {
+      const key = this.s3Service.extractKeyFromUrl(profileImageUrl);
+      if (key) {
+        profileImageUrl = await this.s3Service.getSignedUrl(key, 86400); // 24 hours
+      }
+    }
+
     return {
       ...user.lecturer,
+      profileImage: profileImageUrl,
       email: user.email,
       isActive: user.isActive,
       isEmailVerified: user.isEmailVerified,
@@ -95,7 +114,11 @@ export class LecturerService {
   /**
    * Update lecturer profile
    */
-  async updateProfile(userId: string, dto: UpdateLecturerProfileDto) {
+  async updateProfile(
+    userId: string,
+    dto: UpdateLecturerProfileDto,
+    file?: Express.Multer.File,
+  ) {
     // Check if lecturer exists
     const user = await this.prisma.user.findUnique({
       where: { id: userId },
@@ -104,6 +127,34 @@ export class LecturerService {
 
     if (!user || !user.lecturer) {
       throw new NotFoundException('Lecturer profile not found');
+    }
+
+    let profileImageUrl = dto.profileImage;
+
+    // Handle file upload if provided
+    if (file) {
+      // Validate file
+      validateFileSize(file, 5); // 5MB max
+
+      // Delete old profile image if exists
+      if (user.lecturer.profileImage) {
+        const oldKey = this.s3Service.extractKeyFromUrl(
+          user.lecturer.profileImage,
+        );
+        if (oldKey) {
+          await this.s3Service.deleteFile(oldKey).catch((err) => {
+            this.logger.warn(`Failed to delete old profile image: ${err.message}`);
+          });
+        }
+      }
+
+      // Upload new image
+      const key = generateProfileImageKey('lecturers', user.lecturer.id, file.originalname);
+      profileImageUrl = await this.s3Service.uploadFile(
+        file.buffer,
+        key,
+        file.mimetype,
+      );
     }
 
     // Update lecturer profile
@@ -115,19 +166,37 @@ export class LecturerService {
         phone: dto.phone,
         bio: dto.bio,
         qualifications: dto.qualifications,
+        profileImage: profileImageUrl,
       },
     });
 
     this.logger.log(`Lecturer profile updated: ${user.email}`);
 
-    return {
+    // Generate signed URL for profile image if it exists
+    let signedProfileImageUrl = profileImageUrl;
+    if (profileImageUrl) {
+      const key = this.s3Service.extractKeyFromUrl(profileImageUrl);
+      if (key) {
+        signedProfileImageUrl = await this.s3Service.getSignedUrl(key, 86400); // 24 hours
+      }
+    }
+
+    const response = {
       ...updatedLecturer,
+      profileImage: signedProfileImageUrl,
       email: user.email,
       isActive: user.isActive,
       isEmailVerified: user.isEmailVerified,
       createdAt: user.createdAt,
       updatedAt: user.updatedAt,
     };
+
+    console.log('=== LECTURER SERVICE RESPONSE ===');
+    console.log('Profile Image URL:', response.profileImage);
+    console.log('Full Response:', JSON.stringify(response, null, 2));
+    console.log('=================================');
+
+    return response;
   }
 
   /**

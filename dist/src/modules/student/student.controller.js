@@ -14,6 +14,7 @@ var __param = (this && this.__param) || function (paramIndex, decorator) {
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.StudentController = void 0;
 const common_1 = require("@nestjs/common");
+const platform_express_1 = require("@nestjs/platform-express");
 const swagger_1 = require("@nestjs/swagger");
 const student_service_1 = require("./student.service");
 const update_student_profile_dto_1 = require("./dto/update-student-profile.dto");
@@ -29,8 +30,8 @@ let StudentController = class StudentController {
     async getMyProfile(userId) {
         return this.studentService.getProfile(userId);
     }
-    async updateProfile(userId, dto) {
-        return this.studentService.updateProfile(userId, dto);
+    async updateProfile(userId, dto, file) {
+        return this.studentService.updateProfile(userId, dto, file);
     }
     async enrollInCourse(userId, dto) {
         return this.studentService.enrollInCourse(userId, dto);
@@ -61,7 +62,9 @@ __decorate([
 ], StudentController.prototype, "getMyProfile", null);
 __decorate([
     (0, common_1.Put)('profile'),
+    (0, common_1.UseInterceptors)((0, platform_express_1.FileInterceptor)('profileImage')),
     (0, swagger_1.ApiOperation)({ summary: 'Update student profile' }),
+    (0, swagger_1.ApiConsumes)('multipart/form-data'),
     (0, swagger_1.ApiResponse)({
         status: 200,
         description: 'Profile updated successfully',
@@ -69,8 +72,9 @@ __decorate([
     (0, swagger_1.ApiResponse)({ status: 404, description: 'Profile not found' }),
     __param(0, (0, current_user_decorator_1.CurrentUser)('id')),
     __param(1, (0, common_1.Body)()),
+    __param(2, (0, common_1.UploadedFile)()),
     __metadata("design:type", Function),
-    __metadata("design:paramtypes", [String, update_student_profile_dto_1.UpdateStudentProfileDto]),
+    __metadata("design:paramtypes", [String, update_student_profile_dto_1.UpdateStudentProfileDto, Object]),
     __metadata("design:returntype", Promise)
 ], StudentController.prototype, "updateProfile", null);
 __decorate([
