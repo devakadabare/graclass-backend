@@ -4,7 +4,18 @@ import { UpdateCourseDto } from './dto/update-course.dto';
 export declare class CourseController {
     private readonly courseService;
     constructor(courseService: CourseService);
-    createCourse(userId: string, dto: CreateCourseDto): Promise<{
+    createCourse(userId: string, dto: CreateCourseDto, files?: {
+        flyer?: Express.Multer.File[];
+        images?: Express.Multer.File[];
+    }): Promise<{
+        images: {
+            id: string;
+            createdAt: Date;
+            courseId: string;
+            imageUrl: string;
+            order: number;
+        }[];
+    } & {
         id: string;
         isActive: boolean;
         createdAt: Date;
@@ -21,6 +32,13 @@ export declare class CourseController {
     getMyCourses(userId: string, includeInactive: boolean): Promise<{
         enrollmentsCount: number;
         classesCount: number;
+        images: {
+            id: string;
+            createdAt: Date;
+            courseId: string;
+            imageUrl: string;
+            order: number;
+        }[];
         _count: {
             classes: number;
             enrollments: number;
@@ -47,6 +65,14 @@ export declare class CourseController {
             level: string | null;
             duration: number;
             hourlyRate: import("@prisma/client/runtime/library").Decimal;
+            flyer: string | null;
+            images: {
+                id: string;
+                createdAt: Date;
+                courseId: string;
+                imageUrl: string;
+                order: number;
+            }[];
             lecturer: {
                 id: string;
                 firstName: string;
@@ -82,6 +108,13 @@ export declare class CourseController {
             profileImage: string | null;
             userId: string;
         };
+        images: {
+            id: string;
+            createdAt: Date;
+            courseId: string;
+            imageUrl: string;
+            order: number;
+        }[];
         _count: {
             classes: number;
             enrollments: number;
@@ -106,6 +139,14 @@ export declare class CourseController {
         level: string | null;
         duration: number;
         hourlyRate: import("@prisma/client/runtime/library").Decimal;
+        flyer: string | null;
+        images: {
+            id: string;
+            createdAt: Date;
+            courseId: string;
+            imageUrl: string;
+            order: number;
+        }[];
         lecturer: {
             id: string;
             firstName: string;
@@ -115,7 +156,18 @@ export declare class CourseController {
         classesCount: number;
         isOwner: boolean;
     }>;
-    updateCourse(id: string, userId: string, dto: UpdateCourseDto): Promise<{
+    updateCourse(id: string, userId: string, dto: UpdateCourseDto, files?: {
+        flyer?: Express.Multer.File[];
+        images?: Express.Multer.File[];
+    }): Promise<{
+        images: {
+            id: string;
+            createdAt: Date;
+            courseId: string;
+            imageUrl: string;
+            order: number;
+        }[];
+    } & {
         id: string;
         isActive: boolean;
         createdAt: Date;

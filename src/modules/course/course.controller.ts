@@ -10,6 +10,9 @@ import {
   ParseIntPipe,
   DefaultValuePipe,
   ParseBoolPipe,
+  UploadedFile,
+  UploadedFiles,
+  UseInterceptors,
 } from '@nestjs/common';
 import {
   ApiTags,
@@ -18,7 +21,12 @@ import {
   ApiBearerAuth,
   ApiParam,
   ApiQuery,
+  ApiConsumes,
 } from '@nestjs/swagger';
+import {
+  FileInterceptor,
+  FileFieldsInterceptor,
+} from '@nestjs/platform-express';
 import { CourseService } from './course.service';
 import { CreateCourseDto } from './dto/create-course.dto';
 import { UpdateCourseDto } from './dto/update-course.dto';
@@ -27,6 +35,7 @@ import { CurrentUser } from '../../common/decorators/current-user.decorator';
 import { Roles } from '../../common/decorators/roles.decorator';
 import { UserRole } from '@prisma/client';
 import { Public } from '../../common/decorators/public.decorator';
+import { imageFileFilter } from '../../common/utils/file-upload.util';
 
 @ApiTags('Courses')
 @Controller('courses')
@@ -36,6 +45,16 @@ export class CourseController {
   @Post()
   @Roles(UserRole.LECTURER)
   @ApiBearerAuth()
+  @UseInterceptors(
+    FileFieldsInterceptor(
+      [
+        { name: 'flyer', maxCount: 1 },
+        { name: 'images', maxCount: 10 },
+      ],
+      { fileFilter: imageFileFilter },
+    ),
+  )
+  @ApiConsumes('multipart/form-data')
   @ApiOperation({ summary: 'Create a new course' })
   @ApiResponse({
     status: 201,
@@ -46,8 +65,18 @@ export class CourseController {
   async createCourse(
     @CurrentUser('id') userId: string,
     @Body() dto: CreateCourseDto,
+    @UploadedFiles()
+    files?: {
+      flyer?: Express.Multer.File[];
+      images?: Express.Multer.File[];
+    },
   ) {
-    return this.courseService.createCourse(userId, dto);
+    return this.courseService.createCourse(
+      userId,
+      dto,
+      files?.flyer?.[0],
+      files?.images,
+    );
   }
 
   @Get('my-courses')
@@ -142,6 +171,16 @@ export class CourseController {
   @Put(':id')
   @Roles(UserRole.LECTURER)
   @ApiBearerAuth()
+  @UseInterceptors(
+    FileFieldsInterceptor(
+      [
+        { name: 'flyer', maxCount: 1 },
+        { name: 'images', maxCount: 10 },
+      ],
+      { fileFilter: imageFileFilter },
+    ),
+  )
+  @ApiConsumes('multipart/form-data')
   @ApiOperation({ summary: 'Update a course' })
   @ApiParam({
     name: 'id',
@@ -162,8 +201,19 @@ export class CourseController {
     @Param('id') id: string,
     @CurrentUser('id') userId: string,
     @Body() dto: UpdateCourseDto,
+    @UploadedFiles()
+    files?: {
+      flyer?: Express.Multer.File[];
+      images?: Express.Multer.File[];
+    },
   ) {
-    return this.courseService.updateCourse(id, userId, dto);
+    return this.courseService.updateCourse(
+      id,
+      userId,
+      dto,
+      files?.flyer?.[0],
+      files?.images,
+    );
   }
 
   @Delete(':id')

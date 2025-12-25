@@ -239,6 +239,14 @@ let StudentService = StudentService_1 = class StudentService {
                                 groupId: true,
                             },
                         },
+                        courseEnrollments: {
+                            where: {
+                                status: client_1.EnrollmentStatus.APPROVED,
+                            },
+                            select: {
+                                courseId: true,
+                            },
+                        },
                     },
                 },
             },
@@ -247,17 +255,29 @@ let StudentService = StudentService_1 = class StudentService {
             throw new common_1.NotFoundException('Student profile not found');
         }
         const studentGroupIds = user.student.groupEnrollments.map((enrollment) => enrollment.groupId);
+        const enrolledCourseIds = user.student.courseEnrollments.map((enrollment) => enrollment.courseId);
         const where = {
             OR: [
                 { studentId: user.student.id },
                 ...(studentGroupIds.length > 0
                     ? [{ studentGroupId: { in: studentGroupIds } }]
                     : []),
+                ...(enrolledCourseIds.length > 0
+                    ? [
+                        {
+                            courseId: { in: enrolledCourseIds },
+                            studentId: null,
+                            studentGroupId: null,
+                        },
+                    ]
+                    : []),
             ],
         };
         if (upcoming) {
+            const today = new Date();
+            today.setHours(0, 0, 0, 0);
             where.date = {
-                gte: new Date().toISOString().split('T')[0],
+                gte: today,
             };
             where.status = 'SCHEDULED';
         }
@@ -269,6 +289,13 @@ let StudentService = StudentService_1 = class StudentService {
                     select: {
                         name: true,
                         subject: true,
+                        lecturer: {
+                            select: {
+                                id: true,
+                                firstName: true,
+                                lastName: true,
+                            },
+                        },
                     },
                 },
                 lecturer: {

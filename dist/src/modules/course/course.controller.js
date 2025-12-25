@@ -15,6 +15,7 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.CourseController = void 0;
 const common_1 = require("@nestjs/common");
 const swagger_1 = require("@nestjs/swagger");
+const platform_express_1 = require("@nestjs/platform-express");
 const course_service_1 = require("./course.service");
 const create_course_dto_1 = require("./dto/create-course.dto");
 const update_course_dto_1 = require("./dto/update-course.dto");
@@ -23,13 +24,14 @@ const current_user_decorator_1 = require("../../common/decorators/current-user.d
 const roles_decorator_1 = require("../../common/decorators/roles.decorator");
 const client_1 = require("@prisma/client");
 const public_decorator_1 = require("../../common/decorators/public.decorator");
+const file_upload_util_1 = require("../../common/utils/file-upload.util");
 let CourseController = class CourseController {
     courseService;
     constructor(courseService) {
         this.courseService = courseService;
     }
-    async createCourse(userId, dto) {
-        return this.courseService.createCourse(userId, dto);
+    async createCourse(userId, dto, files) {
+        return this.courseService.createCourse(userId, dto, files?.flyer?.[0], files?.images);
     }
     async getMyCourses(userId, includeInactive) {
         return this.courseService.getLecturerCourses(userId, includeInactive);
@@ -40,8 +42,8 @@ let CourseController = class CourseController {
     async getCourseById(id, userId) {
         return this.courseService.getCourseById(id, userId);
     }
-    async updateCourse(id, userId, dto) {
-        return this.courseService.updateCourse(id, userId, dto);
+    async updateCourse(id, userId, dto, files) {
+        return this.courseService.updateCourse(id, userId, dto, files?.flyer?.[0], files?.images);
     }
     async deleteCourse(id, userId) {
         return this.courseService.deleteCourse(id, userId);
@@ -52,6 +54,11 @@ __decorate([
     (0, common_1.Post)(),
     (0, roles_decorator_1.Roles)(client_1.UserRole.LECTURER),
     (0, swagger_1.ApiBearerAuth)(),
+    (0, common_1.UseInterceptors)((0, platform_express_1.FileFieldsInterceptor)([
+        { name: 'flyer', maxCount: 1 },
+        { name: 'images', maxCount: 10 },
+    ], { fileFilter: file_upload_util_1.imageFileFilter })),
+    (0, swagger_1.ApiConsumes)('multipart/form-data'),
     (0, swagger_1.ApiOperation)({ summary: 'Create a new course' }),
     (0, swagger_1.ApiResponse)({
         status: 201,
@@ -61,8 +68,9 @@ __decorate([
     (0, swagger_1.ApiResponse)({ status: 404, description: 'Lecturer profile not found' }),
     __param(0, (0, current_user_decorator_1.CurrentUser)('id')),
     __param(1, (0, common_1.Body)()),
+    __param(2, (0, common_1.UploadedFiles)()),
     __metadata("design:type", Function),
-    __metadata("design:paramtypes", [String, create_course_dto_1.CreateCourseDto]),
+    __metadata("design:paramtypes", [String, create_course_dto_1.CreateCourseDto, Object]),
     __metadata("design:returntype", Promise)
 ], CourseController.prototype, "createCourse", null);
 __decorate([
@@ -157,6 +165,11 @@ __decorate([
     (0, common_1.Put)(':id'),
     (0, roles_decorator_1.Roles)(client_1.UserRole.LECTURER),
     (0, swagger_1.ApiBearerAuth)(),
+    (0, common_1.UseInterceptors)((0, platform_express_1.FileFieldsInterceptor)([
+        { name: 'flyer', maxCount: 1 },
+        { name: 'images', maxCount: 10 },
+    ], { fileFilter: file_upload_util_1.imageFileFilter })),
+    (0, swagger_1.ApiConsumes)('multipart/form-data'),
     (0, swagger_1.ApiOperation)({ summary: 'Update a course' }),
     (0, swagger_1.ApiParam)({
         name: 'id',
@@ -176,8 +189,9 @@ __decorate([
     __param(0, (0, common_1.Param)('id')),
     __param(1, (0, current_user_decorator_1.CurrentUser)('id')),
     __param(2, (0, common_1.Body)()),
+    __param(3, (0, common_1.UploadedFiles)()),
     __metadata("design:type", Function),
-    __metadata("design:paramtypes", [String, String, update_course_dto_1.UpdateCourseDto]),
+    __metadata("design:paramtypes", [String, String, update_course_dto_1.UpdateCourseDto, Object]),
     __metadata("design:returntype", Promise)
 ], CourseController.prototype, "updateCourse", null);
 __decorate([

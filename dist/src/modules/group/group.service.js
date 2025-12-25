@@ -20,6 +20,24 @@ let GroupService = GroupService_1 = class GroupService {
     constructor(prisma) {
         this.prisma = prisma;
     }
+    async generateGroupCode() {
+        const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
+        let code = '';
+        let isUnique = false;
+        while (!isUnique) {
+            code = '';
+            for (let i = 0; i < 6; i++) {
+                code += chars.charAt(Math.floor(Math.random() * chars.length));
+            }
+            const existing = await this.prisma.studentGroup.findUnique({
+                where: { groupCode: code },
+            });
+            if (!existing) {
+                isUnique = true;
+            }
+        }
+        return code;
+    }
     async createGroup(userId, dto) {
         const user = await this.prisma.user.findUnique({
             where: { id: userId },
@@ -28,10 +46,12 @@ let GroupService = GroupService_1 = class GroupService {
         if (!user || !user.student) {
             throw new common_1.NotFoundException('Student profile not found');
         }
+        const groupCode = await this.generateGroupCode();
         const group = await this.prisma.studentGroup.create({
             data: {
                 name: dto.name,
                 description: dto.description,
+                groupCode,
                 createdBy: user.student.id,
             },
             include: {
@@ -48,10 +68,37 @@ let GroupService = GroupService_1 = class GroupService {
                 studentId: user.student.id,
                 groupId: group.id,
                 status: client_1.EnrollmentStatus.APPROVED,
+                approvedByOwner: true,
+                approvedAt: new Date(),
             },
         });
-        this.logger.log(`Student group created: ${group.name} by ${user.email}`);
+        this.logger.log(`Student group created: ${group.name} by ${user.email} with code: ${groupCode}`);
         return group;
+    }
+    async searchByGroupCode(groupCode) {
+        const group = await this.prisma.studentGroup.findUnique({
+            where: { groupCode },
+            include: {
+                creator: {
+                    select: {
+                        firstName: true,
+                        lastName: true,
+                    },
+                },
+                _count: {
+                    select: {
+                        members: true,
+                    },
+                },
+            },
+        });
+        if (!group || !group.isActive) {
+            throw new common_1.NotFoundException('Group not found or not active');
+        }
+        return {
+            ...group,
+            memberCount: group._count.members,
+        };
     }
     async getAllGroups(page = 1, limit = 20) {
         const skip = (page - 1) * limit;
@@ -70,7 +117,7 @@ let GroupService = GroupService_1 = class GroupService {
                     },
                     _count: {
                         select: {
-                            enrollments: true,
+                            members: true,
                         },
                     },
                 },
@@ -80,7 +127,7 @@ let GroupService = GroupService_1 = class GroupService {
         return {
             data: groups.map((g) => ({
                 ...g,
-                memberCount: g._count.enrollments,
+                memberCount: g._count.members,
             })),
             meta: {
                 total,
@@ -105,7 +152,7 @@ let GroupService = GroupService_1 = class GroupService {
                         },
                     },
                 },
-                enrollments: {
+                members: {
                     where: { status: client_1.EnrollmentStatus.APPROVED },
                     include: {
                         student: {
@@ -123,6 +170,136 @@ let GroupService = GroupService_1 = class GroupService {
         }
         return group;
     }
+    async getGroupDetails(groupId, userId) {
+        const user = await this.prisma.user.findUnique({
+            where: { id: userId },
+            include: { student: true },
+        });
+        if (!user || !user.student) {
+            throw new common_1.NotFoundException('Student profile not found');
+        }
+        const group = await this.prisma.studentGroup.findUnique({
+            where: { id: groupId },
+            include: {
+                creator: {
+                    select: {
+                        id: true,
+                        firstName: true,
+                        lastName: true,
+                        university: true,
+                        studentId: true,
+                        user: {
+                            select: {
+                                email: true,
+                            },
+                        },
+                    },
+                },
+                members: {
+                    include: {
+                        student: {
+                            select: {
+                                id: true,
+                                firstName: true,
+                                lastName: true,
+                                university: true,
+                                studentId: true,
+                                profileImage: true,
+                                user: {
+                                    select: {
+                                        email: true,
+                                    },
+                                },
+                            },
+                        },
+                    },
+                    orderBy: {
+                        createdAt: 'asc',
+                    },
+                },
+                courseEnrolls: {
+                    where: {
+                        status: client_1.EnrollmentStatus.APPROVED,
+                    },
+                    include: {
+                        course: {
+                            select: {
+                                id: true,
+                                name: true,
+                                subject: true,
+                            },
+                        },
+                    },
+                },
+                _count: {
+                    select: {
+                        members: true,
+                        courseEnrolls: true,
+                    },
+                },
+            },
+        });
+        if (!group) {
+            throw new common_1.NotFoundException('Group not found');
+        }
+        const isCreator = group.createdBy === user.student.id;
+        const userMembership = group.members.find((m) => m.studentId === user.student.id);
+        const isMember = !!userMembership;
+        const approvedMembers = group.members.filter((m) => m.status === client_1.EnrollmentStatus.APPROVED);
+        const pendingMembers = group.members.filter((m) => m.status === client_1.EnrollmentStatus.PENDING);
+        return {
+            id: group.id,
+            name: group.name,
+            description: group.description,
+            groupCode: group.groupCode,
+            isActive: group.isActive,
+            createdAt: group.createdAt,
+            updatedAt: group.updatedAt,
+            creator: group.creator,
+            isCreator,
+            isMember,
+            membershipStatus: userMembership?.status || null,
+            stats: {
+                totalMembers: approvedMembers.length,
+                pendingRequests: pendingMembers.length,
+                enrolledCourses: group._count.courseEnrolls,
+            },
+            members: approvedMembers.map((m) => ({
+                enrollmentId: m.id,
+                joinedAt: m.approvedAt,
+                student: {
+                    id: m.student.id,
+                    firstName: m.student.firstName,
+                    lastName: m.student.lastName,
+                    university: m.student.university,
+                    studentId: m.student.studentId,
+                    profileImage: m.student.profileImage,
+                    email: m.student.user.email,
+                },
+            })),
+            pendingRequests: isCreator
+                ? pendingMembers.map((m) => ({
+                    enrollmentId: m.id,
+                    requestedAt: m.createdAt,
+                    student: {
+                        id: m.student.id,
+                        firstName: m.student.firstName,
+                        lastName: m.student.lastName,
+                        university: m.student.university,
+                        studentId: m.student.studentId,
+                        profileImage: m.student.profileImage,
+                        email: m.student.user.email,
+                    },
+                }))
+                : [],
+            enrolledCourses: group.courseEnrolls.map((ce) => ({
+                id: ce.course.id,
+                name: ce.course.name,
+                subject: ce.course.subject,
+                enrolledAt: ce.approvedAt,
+            })),
+        };
+    }
     async getMyGroups(userId) {
         const user = await this.prisma.user.findUnique({
             where: { id: userId },
@@ -137,14 +314,14 @@ let GroupService = GroupService_1 = class GroupService {
             include: {
                 _count: {
                     select: {
-                        enrollments: true,
+                        members: true,
                     },
                 },
             },
         });
         return groups.map((g) => ({
             ...g,
-            memberCount: g._count.enrollments,
+            memberCount: g._count.members,
         }));
     }
     async getJoinedGroups(userId) {
@@ -171,7 +348,7 @@ let GroupService = GroupService_1 = class GroupService {
                         },
                         _count: {
                             select: {
-                                enrollments: true,
+                                members: true,
                             },
                         },
                     },
@@ -180,10 +357,10 @@ let GroupService = GroupService_1 = class GroupService {
         });
         return enrollments.map((e) => ({
             ...e.group,
-            memberCount: e.group._count.enrollments,
+            memberCount: e.group._count.members,
         }));
     }
-    async joinGroup(userId, groupId) {
+    async joinGroupByCode(userId, groupCode) {
         const user = await this.prisma.user.findUnique({
             where: { id: userId },
             include: { student: true },
@@ -192,7 +369,7 @@ let GroupService = GroupService_1 = class GroupService {
             throw new common_1.NotFoundException('Student profile not found');
         }
         const group = await this.prisma.studentGroup.findUnique({
-            where: { id: groupId },
+            where: { groupCode },
         });
         if (!group || !group.isActive) {
             throw new common_1.NotFoundException('Group not found or not active');
@@ -201,7 +378,7 @@ let GroupService = GroupService_1 = class GroupService {
             where: {
                 studentId_groupId: {
                     studentId: user.student.id,
-                    groupId,
+                    groupId: group.id,
                 },
             },
         });
@@ -211,12 +388,180 @@ let GroupService = GroupService_1 = class GroupService {
         const enrollment = await this.prisma.groupEnrollment.create({
             data: {
                 studentId: user.student.id,
-                groupId,
+                groupId: group.id,
                 status: client_1.EnrollmentStatus.PENDING,
+            },
+            include: {
+                student: {
+                    select: {
+                        firstName: true,
+                        lastName: true,
+                    },
+                },
             },
         });
         this.logger.log(`Student ${user.email} requested to join group: ${group.name}`);
         return enrollment;
+    }
+    async getPendingJoinRequests(userId) {
+        const user = await this.prisma.user.findUnique({
+            where: { id: userId },
+            include: { student: true },
+        });
+        if (!user || !user.student) {
+            throw new common_1.NotFoundException('Student profile not found');
+        }
+        const requests = await this.prisma.groupEnrollment.findMany({
+            where: {
+                group: {
+                    createdBy: user.student.id,
+                },
+                status: client_1.EnrollmentStatus.PENDING,
+            },
+            include: {
+                student: {
+                    select: {
+                        id: true,
+                        firstName: true,
+                        lastName: true,
+                        university: true,
+                    },
+                },
+                group: {
+                    select: {
+                        id: true,
+                        name: true,
+                        groupCode: true,
+                    },
+                },
+            },
+            orderBy: {
+                createdAt: 'asc',
+            },
+        });
+        return requests;
+    }
+    async approveJoinRequest(userId, enrollmentId) {
+        const user = await this.prisma.user.findUnique({
+            where: { id: userId },
+            include: { student: true },
+        });
+        if (!user || !user.student) {
+            throw new common_1.NotFoundException('Student profile not found');
+        }
+        const enrollment = await this.prisma.groupEnrollment.findUnique({
+            where: { id: enrollmentId },
+            include: {
+                group: {
+                    include: {
+                        courseEnrolls: {
+                            where: {
+                                status: client_1.EnrollmentStatus.APPROVED,
+                            },
+                            select: {
+                                courseId: true,
+                            },
+                        },
+                    },
+                },
+            },
+        });
+        if (!enrollment) {
+            throw new common_1.NotFoundException('Join request not found');
+        }
+        if (enrollment.group.createdBy !== user.student.id) {
+            throw new common_1.ForbiddenException('Only group owner can approve join requests');
+        }
+        if (enrollment.status !== client_1.EnrollmentStatus.PENDING) {
+            throw new common_1.BadRequestException('Request already processed');
+        }
+        const updated = await this.prisma.groupEnrollment.update({
+            where: { id: enrollmentId },
+            data: {
+                status: client_1.EnrollmentStatus.APPROVED,
+                approvedByOwner: true,
+                approvedAt: new Date(),
+            },
+        });
+        if (enrollment.group.courseEnrolls.length > 0) {
+            const courseEnrollments = enrollment.group.courseEnrolls.map((ce) => ({
+                studentId: enrollment.studentId,
+                courseId: ce.courseId,
+                groupEnrollmentId: enrollmentId,
+                studentGroupId: enrollment.groupId,
+                status: client_1.EnrollmentStatus.PENDING,
+                approvedByLecturer: false,
+            }));
+            await this.prisma.studentCourseEnrollment.createMany({
+                data: courseEnrollments,
+            });
+            this.logger.log(`Created ${courseEnrollments.length} pending course enrollments for student joining group`);
+        }
+        this.logger.log(`Group join request approved: ${enrollment.group.name} by ${user.email}`);
+        return updated;
+    }
+    async rejectJoinRequest(userId, enrollmentId) {
+        const user = await this.prisma.user.findUnique({
+            where: { id: userId },
+            include: { student: true },
+        });
+        if (!user || !user.student) {
+            throw new common_1.NotFoundException('Student profile not found');
+        }
+        const enrollment = await this.prisma.groupEnrollment.findUnique({
+            where: { id: enrollmentId },
+            include: {
+                group: true,
+            },
+        });
+        if (!enrollment) {
+            throw new common_1.NotFoundException('Join request not found');
+        }
+        if (enrollment.group.createdBy !== user.student.id) {
+            throw new common_1.ForbiddenException('Only group owner can reject join requests');
+        }
+        if (enrollment.status !== client_1.EnrollmentStatus.PENDING) {
+            throw new common_1.BadRequestException('Request already processed');
+        }
+        const updated = await this.prisma.groupEnrollment.update({
+            where: { id: enrollmentId },
+            data: {
+                status: client_1.EnrollmentStatus.REJECTED,
+                rejectedAt: new Date(),
+            },
+        });
+        this.logger.log(`Group join request rejected: ${enrollment.group.name} by ${user.email}`);
+        return updated;
+    }
+    async removeMember(userId, enrollmentId) {
+        const user = await this.prisma.user.findUnique({
+            where: { id: userId },
+            include: { student: true },
+        });
+        if (!user || !user.student) {
+            throw new common_1.NotFoundException('Student profile not found');
+        }
+        const enrollment = await this.prisma.groupEnrollment.findUnique({
+            where: { id: enrollmentId },
+            include: {
+                group: true,
+                student: true,
+            },
+        });
+        if (!enrollment) {
+            throw new common_1.NotFoundException('Group enrollment not found');
+        }
+        if (enrollment.group.createdBy !== user.student.id) {
+            throw new common_1.ForbiddenException('Only group owner can remove members');
+        }
+        if (enrollment.studentId === enrollment.group.createdBy) {
+            throw new common_1.BadRequestException('Cannot remove the group owner');
+        }
+        await this.prisma.groupEnrollment.delete({
+            where: { id: enrollmentId },
+        });
+        this.logger.log(`Member removed from group: ${enrollment.student.firstName} ${enrollment.student.lastName} from ${enrollment.group.name} by ${user.email}`);
+        return { message: 'Member successfully removed' };
     }
     async updateGroup(userId, groupId, dto) {
         const user = await this.prisma.user.findUnique({

@@ -318,6 +318,14 @@ export class StudentService {
                 groupId: true,
               },
             },
+            courseEnrollments: {
+              where: {
+                status: EnrollmentStatus.APPROVED,
+              },
+              select: {
+                courseId: true,
+              },
+            },
           },
         },
       },
@@ -332,18 +340,37 @@ export class StudentService {
       (enrollment) => enrollment.groupId,
     );
 
+    // Get course IDs that the student is enrolled in
+    const enrolledCourseIds = user.student.courseEnrollments.map(
+      (enrollment) => enrollment.courseId,
+    );
+
     const where: any = {
       OR: [
+        // Classes directly assigned to this student
         { studentId: user.student.id },
+        // Classes assigned to groups this student belongs to
         ...(studentGroupIds.length > 0
           ? [{ studentGroupId: { in: studentGroupIds } }]
+          : []),
+        // Classes from courses the student is enrolled in
+        ...(enrolledCourseIds.length > 0
+          ? [
+              {
+                courseId: { in: enrolledCourseIds },
+                studentId: null,
+                studentGroupId: null,
+              },
+            ]
           : []),
       ],
     };
 
     if (upcoming) {
+      const today = new Date();
+      today.setHours(0, 0, 0, 0); // Set to start of day
       where.date = {
-        gte: new Date().toISOString().split('T')[0], // Use date string for comparison
+        gte: today,
       };
       where.status = 'SCHEDULED';
     }
@@ -356,6 +383,13 @@ export class StudentService {
           select: {
             name: true,
             subject: true,
+            lecturer: {
+              select: {
+                id: true,
+                firstName: true,
+                lastName: true,
+              },
+            },
           },
         },
         lecturer: {

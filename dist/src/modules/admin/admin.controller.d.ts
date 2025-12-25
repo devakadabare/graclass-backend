@@ -162,9 +162,9 @@ export declare class AdminController {
             id: string;
             studentId: string | null;
             status: import(".prisma/client").$Enums.EnrollmentStatus;
-            requestedAt: Date;
             approvedAt: Date | null;
             rejectedAt: Date | null;
+            requestedAt: Date;
             courseId: string;
             studentGroupId: string | null;
         })[];

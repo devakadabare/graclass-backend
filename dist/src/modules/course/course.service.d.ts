@@ -1,11 +1,21 @@
 import { PrismaService } from '../../prisma/prisma.service';
 import { CreateCourseDto } from './dto/create-course.dto';
 import { UpdateCourseDto } from './dto/update-course.dto';
+import { S3Service } from '../../common/services/s3.service';
 export declare class CourseService {
     private readonly prisma;
+    private readonly s3Service;
     private readonly logger;
-    constructor(prisma: PrismaService);
-    createCourse(userId: string, dto: CreateCourseDto): Promise<{
+    constructor(prisma: PrismaService, s3Service: S3Service);
+    createCourse(userId: string, dto: CreateCourseDto, flyer?: Express.Multer.File, images?: Express.Multer.File[]): Promise<{
+        images: {
+            id: string;
+            createdAt: Date;
+            courseId: string;
+            imageUrl: string;
+            order: number;
+        }[];
+    } & {
         id: string;
         isActive: boolean;
         createdAt: Date;
@@ -22,6 +32,13 @@ export declare class CourseService {
     getLecturerCourses(userId: string, includeInactive?: boolean): Promise<{
         enrollmentsCount: number;
         classesCount: number;
+        images: {
+            id: string;
+            createdAt: Date;
+            courseId: string;
+            imageUrl: string;
+            order: number;
+        }[];
         _count: {
             classes: number;
             enrollments: number;
@@ -60,6 +77,13 @@ export declare class CourseService {
             profileImage: string | null;
             userId: string;
         };
+        images: {
+            id: string;
+            createdAt: Date;
+            courseId: string;
+            imageUrl: string;
+            order: number;
+        }[];
         _count: {
             classes: number;
             enrollments: number;
@@ -84,6 +108,14 @@ export declare class CourseService {
         level: string | null;
         duration: number;
         hourlyRate: import("@prisma/client/runtime/library").Decimal;
+        flyer: string | null;
+        images: {
+            id: string;
+            createdAt: Date;
+            courseId: string;
+            imageUrl: string;
+            order: number;
+        }[];
         lecturer: {
             id: string;
             firstName: string;
@@ -93,7 +125,15 @@ export declare class CourseService {
         classesCount: number;
         isOwner: boolean;
     }>;
-    updateCourse(courseId: string, userId: string, dto: UpdateCourseDto): Promise<{
+    updateCourse(courseId: string, userId: string, dto: UpdateCourseDto, flyer?: Express.Multer.File, images?: Express.Multer.File[]): Promise<{
+        images: {
+            id: string;
+            createdAt: Date;
+            courseId: string;
+            imageUrl: string;
+            order: number;
+        }[];
+    } & {
         id: string;
         isActive: boolean;
         createdAt: Date;
@@ -124,6 +164,14 @@ export declare class CourseService {
             level: string | null;
             duration: number;
             hourlyRate: import("@prisma/client/runtime/library").Decimal;
+            flyer: string | null;
+            images: {
+                id: string;
+                createdAt: Date;
+                courseId: string;
+                imageUrl: string;
+                order: number;
+            }[];
             lecturer: {
                 id: string;
                 firstName: string;

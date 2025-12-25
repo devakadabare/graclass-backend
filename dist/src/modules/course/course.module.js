@@ -11,6 +11,7 @@ const common_1 = require("@nestjs/common");
 const course_controller_1 = require("./course.controller");
 const course_service_1 = require("./course.service");
 const prisma_module_1 = require("../../prisma/prisma.module");
+const s3_service_1 = require("../../common/services/s3.service");
 let CourseModule = class CourseModule {
 };
 exports.CourseModule = CourseModule;
@@ -18,7 +19,7 @@ exports.CourseModule = CourseModule = __decorate([
     (0, common_1.Module)({
         imports: [prisma_module_1.PrismaModule],
         controllers: [course_controller_1.CourseController],
-        providers: [course_service_1.CourseService],
+        providers: [course_service_1.CourseService, s3_service_1.S3Service],
         exports: [course_service_1.CourseService],
     })
 ], CourseModule);

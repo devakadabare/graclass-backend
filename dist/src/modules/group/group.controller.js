@@ -38,11 +38,29 @@ let GroupController = class GroupController {
     async getJoinedGroups(userId) {
         return this.groupService.getJoinedGroups(userId);
     }
+    async getPendingJoinRequests(userId) {
+        return this.groupService.getPendingJoinRequests(userId);
+    }
+    async searchByGroupCode(groupCode) {
+        return this.groupService.searchByGroupCode(groupCode);
+    }
     async getGroupById(id) {
         return this.groupService.getGroupById(id);
     }
-    async joinGroup(userId, id) {
-        return this.groupService.joinGroup(userId, id);
+    async getGroupDetails(userId, id) {
+        return this.groupService.getGroupDetails(id, userId);
+    }
+    async joinGroup(userId, groupCode) {
+        return this.groupService.joinGroupByCode(userId, groupCode);
+    }
+    async approveJoinRequest(userId, enrollmentId) {
+        return this.groupService.approveJoinRequest(userId, enrollmentId);
+    }
+    async rejectJoinRequest(userId, enrollmentId) {
+        return this.groupService.rejectJoinRequest(userId, enrollmentId);
+    }
+    async removeMember(userId, enrollmentId) {
+        return this.groupService.removeMember(userId, enrollmentId);
     }
     async updateGroup(userId, id, dto) {
         return this.groupService.updateGroup(userId, id, dto);
@@ -105,6 +123,36 @@ __decorate([
     __metadata("design:returntype", Promise)
 ], GroupController.prototype, "getJoinedGroups", null);
 __decorate([
+    (0, common_1.Get)('pending-requests'),
+    (0, swagger_1.ApiOperation)({ summary: 'Get pending join requests for my groups' }),
+    (0, swagger_1.ApiResponse)({
+        status: 200,
+        description: 'Pending join requests retrieved successfully',
+    }),
+    __param(0, (0, current_user_decorator_1.CurrentUser)('id')),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [String]),
+    __metadata("design:returntype", Promise)
+], GroupController.prototype, "getPendingJoinRequests", null);
+__decorate([
+    (0, common_1.Get)('search/:groupCode'),
+    (0, swagger_1.ApiOperation)({ summary: 'Search for a group by group code' }),
+    (0, swagger_1.ApiParam)({
+        name: 'groupCode',
+        description: 'Group code',
+        example: 'ABC123',
+    }),
+    (0, swagger_1.ApiResponse)({
+        status: 200,
+        description: 'Group found successfully',
+    }),
+    (0, swagger_1.ApiResponse)({ status: 404, description: 'Group not found' }),
+    __param(0, (0, common_1.Param)('groupCode')),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [String]),
+    __metadata("design:returntype", Promise)
+], GroupController.prototype, "searchByGroupCode", null);
+__decorate([
     (0, common_1.Get)(':id'),
     (0, swagger_1.ApiOperation)({ summary: 'Get group by ID' }),
     (0, swagger_1.ApiParam)({
@@ -123,12 +171,84 @@ __decorate([
     __metadata("design:returntype", Promise)
 ], GroupController.prototype, "getGroupById", null);
 __decorate([
-    (0, common_1.Post)(':id/join'),
-    (0, swagger_1.ApiOperation)({ summary: 'Join a group' }),
+    (0, common_1.Get)(':id/details'),
+    (0, swagger_1.ApiOperation)({
+        summary: 'Get detailed group information for popup/modal - includes group code, all members, pending requests (if owner), and enrolled courses',
+    }),
     (0, swagger_1.ApiParam)({
         name: 'id',
         description: 'Group ID',
         example: '550e8400-e29b-41d4-a716-446655440000',
+    }),
+    (0, swagger_1.ApiResponse)({
+        status: 200,
+        description: 'Detailed group information retrieved successfully',
+        schema: {
+            example: {
+                id: '550e8400-e29b-41d4-a716-446655440000',
+                name: 'Computer Science Study Group',
+                description: 'Group for CS students studying together',
+                groupCode: 'ABC123',
+                isActive: true,
+                createdAt: '2024-01-01T00:00:00.000Z',
+                updatedAt: '2024-01-01T00:00:00.000Z',
+                creator: {
+                    id: 'creator-id',
+                    firstName: 'John',
+                    lastName: 'Doe',
+                    university: 'University of Example',
+                    studentId: 'STU001',
+                    email: 'john@example.com',
+                },
+                isCreator: true,
+                isMember: true,
+                membershipStatus: 'APPROVED',
+                stats: {
+                    totalMembers: 5,
+                    pendingRequests: 2,
+                    enrolledCourses: 3,
+                },
+                members: [
+                    {
+                        enrollmentId: 'enrollment-id',
+                        joinedAt: '2024-01-01T00:00:00.000Z',
+                        student: {
+                            id: 'student-id',
+                            firstName: 'Jane',
+                            lastName: 'Smith',
+                            university: 'University of Example',
+                            studentId: 'STU002',
+                            profileImage: 'https://...',
+                            email: 'jane@example.com',
+                        },
+                    },
+                ],
+                pendingRequests: [],
+                enrolledCourses: [
+                    {
+                        id: 'course-id',
+                        name: 'Introduction to Programming',
+                        subject: 'Computer Science',
+                        enrolledAt: '2024-01-01T00:00:00.000Z',
+                    },
+                ],
+            },
+        },
+    }),
+    (0, swagger_1.ApiResponse)({ status: 404, description: 'Group not found' }),
+    __param(0, (0, current_user_decorator_1.CurrentUser)('id')),
+    __param(1, (0, common_1.Param)('id')),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [String, String]),
+    __metadata("design:returntype", Promise)
+], GroupController.prototype, "getGroupDetails", null);
+__decorate([
+    (0, common_1.Post)('join/:groupCode'),
+    (0, swagger_1.ApiOperation)({ summary: 'Join a group using group code' }),
+    (0, swagger_1.ApiParam)({
+        name: 'groupCode',
+        description: 'Group code',
+        example: 'ABC123',
     }),
     (0, swagger_1.ApiResponse)({
         status: 201,
@@ -137,11 +257,71 @@ __decorate([
     (0, swagger_1.ApiResponse)({ status: 404, description: 'Group not found' }),
     (0, swagger_1.ApiResponse)({ status: 400, description: 'Already a member' }),
     __param(0, (0, current_user_decorator_1.CurrentUser)('id')),
-    __param(1, (0, common_1.Param)('id')),
+    __param(1, (0, common_1.Param)('groupCode')),
     __metadata("design:type", Function),
     __metadata("design:paramtypes", [String, String]),
     __metadata("design:returntype", Promise)
 ], GroupController.prototype, "joinGroup", null);
+__decorate([
+    (0, common_1.Post)('requests/:enrollmentId/approve'),
+    (0, swagger_1.ApiOperation)({ summary: 'Approve a join request (group owner only)' }),
+    (0, swagger_1.ApiParam)({
+        name: 'enrollmentId',
+        description: 'Group enrollment ID',
+        example: '550e8400-e29b-41d4-a716-446655440000',
+    }),
+    (0, swagger_1.ApiResponse)({
+        status: 200,
+        description: 'Join request approved successfully',
+    }),
+    (0, swagger_1.ApiResponse)({ status: 403, description: 'Not authorized' }),
+    (0, swagger_1.ApiResponse)({ status: 404, description: 'Request not found' }),
+    __param(0, (0, current_user_decorator_1.CurrentUser)('id')),
+    __param(1, (0, common_1.Param)('enrollmentId')),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [String, String]),
+    __metadata("design:returntype", Promise)
+], GroupController.prototype, "approveJoinRequest", null);
+__decorate([
+    (0, common_1.Post)('requests/:enrollmentId/reject'),
+    (0, swagger_1.ApiOperation)({ summary: 'Reject a join request (group owner only)' }),
+    (0, swagger_1.ApiParam)({
+        name: 'enrollmentId',
+        description: 'Group enrollment ID',
+        example: '550e8400-e29b-41d4-a716-446655440000',
+    }),
+    (0, swagger_1.ApiResponse)({
+        status: 200,
+        description: 'Join request rejected successfully',
+    }),
+    (0, swagger_1.ApiResponse)({ status: 403, description: 'Not authorized' }),
+    (0, swagger_1.ApiResponse)({ status: 404, description: 'Request not found' }),
+    __param(0, (0, current_user_decorator_1.CurrentUser)('id')),
+    __param(1, (0, common_1.Param)('enrollmentId')),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [String, String]),
+    __metadata("design:returntype", Promise)
+], GroupController.prototype, "rejectJoinRequest", null);
+__decorate([
+    (0, common_1.Delete)('members/:enrollmentId'),
+    (0, swagger_1.ApiOperation)({ summary: 'Remove a member from group (group owner only)' }),
+    (0, swagger_1.ApiParam)({
+        name: 'enrollmentId',
+        description: 'Group enrollment ID',
+        example: '550e8400-e29b-41d4-a716-446655440000',
+    }),
+    (0, swagger_1.ApiResponse)({
+        status: 200,
+        description: 'Member removed successfully',
+    }),
+    (0, swagger_1.ApiResponse)({ status: 403, description: 'Not authorized' }),
+    (0, swagger_1.ApiResponse)({ status: 404, description: 'Member not found' }),
+    __param(0, (0, current_user_decorator_1.CurrentUser)('id')),
+    __param(1, (0, common_1.Param)('enrollmentId')),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [String, String]),
+    __metadata("design:returntype", Promise)
+], GroupController.prototype, "removeMember", null);
 __decorate([
     (0, common_1.Put)(':id'),
     (0, swagger_1.ApiOperation)({ summary: 'Update group (creator only)' }),

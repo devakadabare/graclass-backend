@@ -25,6 +25,7 @@ CREATE TABLE `lecturers` (
     `bio` TEXT NULL,
     `qualifications` TEXT NULL,
     `profilePicture` VARCHAR(191) NULL,
+    `profileImage` VARCHAR(191) NULL,
     `createdAt` DATETIME(3) NOT NULL DEFAULT CURRENT_TIMESTAMP(3),
     `updatedAt` DATETIME(3) NOT NULL,
 
@@ -61,6 +62,7 @@ CREATE TABLE `students` (
     `university` VARCHAR(191) NULL,
     `studentId` VARCHAR(191) NULL,
     `profilePicture` VARCHAR(191) NULL,
+    `profileImage` VARCHAR(191) NULL,
     `createdAt` DATETIME(3) NOT NULL DEFAULT CURRENT_TIMESTAMP(3),
     `updatedAt` DATETIME(3) NOT NULL,
 
@@ -74,13 +76,16 @@ CREATE TABLE `student_groups` (
     `id` VARCHAR(191) NOT NULL,
     `name` VARCHAR(191) NOT NULL,
     `description` TEXT NULL,
+    `groupCode` VARCHAR(191) NULL,
     `createdBy` VARCHAR(191) NOT NULL,
     `isActive` BOOLEAN NOT NULL DEFAULT true,
     `createdAt` DATETIME(3) NOT NULL DEFAULT CURRENT_TIMESTAMP(3),
     `updatedAt` DATETIME(3) NOT NULL,
 
+    UNIQUE INDEX `student_groups_groupCode_key`(`groupCode`),
     INDEX `student_groups_createdBy_idx`(`createdBy`),
     INDEX `student_groups_isActive_idx`(`isActive`),
+    INDEX `student_groups_groupCode_idx`(`groupCode`),
     PRIMARY KEY (`id`)
 ) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
 
@@ -90,6 +95,9 @@ CREATE TABLE `group_enrollments` (
     `studentId` VARCHAR(191) NOT NULL,
     `groupId` VARCHAR(191) NOT NULL,
     `status` ENUM('PENDING', 'APPROVED', 'REJECTED') NOT NULL DEFAULT 'PENDING',
+    `approvedByOwner` BOOLEAN NOT NULL DEFAULT false,
+    `approvedAt` DATETIME(3) NULL,
+    `rejectedAt` DATETIME(3) NULL,
     `createdAt` DATETIME(3) NOT NULL DEFAULT CURRENT_TIMESTAMP(3),
     `updatedAt` DATETIME(3) NOT NULL,
 
@@ -97,6 +105,28 @@ CREATE TABLE `group_enrollments` (
     INDEX `group_enrollments_groupId_idx`(`groupId`),
     INDEX `group_enrollments_status_idx`(`status`),
     UNIQUE INDEX `group_enrollments_studentId_groupId_key`(`studentId`, `groupId`),
+    PRIMARY KEY (`id`)
+) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+
+-- CreateTable
+CREATE TABLE `student_course_enrollments` (
+    `id` VARCHAR(191) NOT NULL,
+    `studentId` VARCHAR(191) NOT NULL,
+    `courseId` VARCHAR(191) NOT NULL,
+    `groupEnrollmentId` VARCHAR(191) NOT NULL,
+    `studentGroupId` VARCHAR(191) NOT NULL,
+    `status` ENUM('PENDING', 'APPROVED', 'REJECTED') NOT NULL DEFAULT 'PENDING',
+    `approvedByLecturer` BOOLEAN NOT NULL DEFAULT false,
+    `requestedAt` DATETIME(3) NOT NULL DEFAULT CURRENT_TIMESTAMP(3),
+    `approvedAt` DATETIME(3) NULL,
+    `rejectedAt` DATETIME(3) NULL,
+
+    INDEX `student_course_enrollments_studentId_idx`(`studentId`),
+    INDEX `student_course_enrollments_courseId_idx`(`courseId`),
+    INDEX `student_course_enrollments_groupEnrollmentId_idx`(`groupEnrollmentId`),
+    INDEX `student_course_enrollments_studentGroupId_idx`(`studentGroupId`),
+    INDEX `student_course_enrollments_status_idx`(`status`),
+    UNIQUE INDEX `student_course_enrollments_studentId_courseId_studentGroupId_key`(`studentId`, `courseId`, `studentGroupId`),
     PRIMARY KEY (`id`)
 ) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
 
@@ -110,6 +140,7 @@ CREATE TABLE `courses` (
     `level` VARCHAR(191) NULL,
     `duration` INTEGER NOT NULL,
     `hourlyRate` DECIMAL(10, 2) NOT NULL,
+    `flyer` VARCHAR(191) NULL,
     `isActive` BOOLEAN NOT NULL DEFAULT true,
     `createdAt` DATETIME(3) NOT NULL DEFAULT CURRENT_TIMESTAMP(3),
     `updatedAt` DATETIME(3) NOT NULL,
@@ -117,6 +148,18 @@ CREATE TABLE `courses` (
     INDEX `courses_lecturerId_idx`(`lecturerId`),
     INDEX `courses_isActive_idx`(`isActive`),
     INDEX `courses_subject_idx`(`subject`),
+    PRIMARY KEY (`id`)
+) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+
+-- CreateTable
+CREATE TABLE `course_images` (
+    `id` VARCHAR(191) NOT NULL,
+    `courseId` VARCHAR(191) NOT NULL,
+    `imageUrl` VARCHAR(191) NOT NULL,
+    `order` INTEGER NOT NULL DEFAULT 0,
+    `createdAt` DATETIME(3) NOT NULL DEFAULT CURRENT_TIMESTAMP(3),
+
+    INDEX `course_images_courseId_idx`(`courseId`),
     PRIMARY KEY (`id`)
 ) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
 
@@ -238,7 +281,22 @@ ALTER TABLE `group_enrollments` ADD CONSTRAINT `group_enrollments_studentId_fkey
 ALTER TABLE `group_enrollments` ADD CONSTRAINT `group_enrollments_groupId_fkey` FOREIGN KEY (`groupId`) REFERENCES `student_groups`(`id`) ON DELETE CASCADE ON UPDATE CASCADE;
 
 -- AddForeignKey
+ALTER TABLE `student_course_enrollments` ADD CONSTRAINT `student_course_enrollments_studentId_fkey` FOREIGN KEY (`studentId`) REFERENCES `students`(`id`) ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE `student_course_enrollments` ADD CONSTRAINT `student_course_enrollments_courseId_fkey` FOREIGN KEY (`courseId`) REFERENCES `courses`(`id`) ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE `student_course_enrollments` ADD CONSTRAINT `student_course_enrollments_groupEnrollmentId_fkey` FOREIGN KEY (`groupEnrollmentId`) REFERENCES `group_enrollments`(`id`) ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE `student_course_enrollments` ADD CONSTRAINT `student_course_enrollments_studentGroupId_fkey` FOREIGN KEY (`studentGroupId`) REFERENCES `student_groups`(`id`) ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
 ALTER TABLE `courses` ADD CONSTRAINT `courses_lecturerId_fkey` FOREIGN KEY (`lecturerId`) REFERENCES `lecturers`(`id`) ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE `course_images` ADD CONSTRAINT `course_images_courseId_fkey` FOREIGN KEY (`courseId`) REFERENCES `courses`(`id`) ON DELETE CASCADE ON UPDATE CASCADE;
 
 -- AddForeignKey
 ALTER TABLE `course_enrollments` ADD CONSTRAINT `course_enrollments_courseId_fkey` FOREIGN KEY (`courseId`) REFERENCES `courses`(`id`) ON DELETE CASCADE ON UPDATE CASCADE;

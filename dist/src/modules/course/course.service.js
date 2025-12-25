@@ -13,13 +13,17 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.CourseService = void 0;
 const common_1 = require("@nestjs/common");
 const prisma_service_1 = require("../../prisma/prisma.service");
+const s3_service_1 = require("../../common/services/s3.service");
+const file_upload_util_1 = require("../../common/utils/file-upload.util");
 let CourseService = CourseService_1 = class CourseService {
     prisma;
+    s3Service;
     logger = new common_1.Logger(CourseService_1.name);
-    constructor(prisma) {
+    constructor(prisma, s3Service) {
         this.prisma = prisma;
+        this.s3Service = s3Service;
     }
-    async createCourse(userId, dto) {
+    async createCourse(userId, dto, flyer, images) {
         const user = await this.prisma.user.findUnique({
             where: { id: userId },
             include: { lecturer: true },
@@ -38,8 +42,49 @@ let CourseService = CourseService_1 = class CourseService {
                 hourlyRate: dto.hourlyRate,
             },
         });
-        this.logger.log(`Course created: ${course.name} by ${user.email}`);
-        return course;
+        try {
+            let flyerUrl;
+            if (flyer) {
+                (0, file_upload_util_1.validateFileSize)(flyer, 5);
+                const flyerKey = (0, file_upload_util_1.generateCourseImageKey)(course.id, flyer.originalname, 'flyer');
+                flyerUrl = await this.s3Service.uploadFile(flyer.buffer, flyerKey, flyer.mimetype);
+            }
+            const imageUrls = [];
+            if (images && images.length > 0) {
+                for (const image of images) {
+                    (0, file_upload_util_1.validateFileSize)(image, 5);
+                    const imageKey = (0, file_upload_util_1.generateCourseImageKey)(course.id, image.originalname, 'image');
+                    const imageUrl = await this.s3Service.uploadFile(image.buffer, imageKey, image.mimetype);
+                    imageUrls.push(imageUrl);
+                }
+            }
+            const updatedCourse = await this.prisma.course.update({
+                where: { id: course.id },
+                data: {
+                    flyer: flyerUrl,
+                    images: {
+                        create: imageUrls.map((url, index) => ({
+                            imageUrl: url,
+                            order: index,
+                        })),
+                    },
+                },
+                include: {
+                    images: {
+                        orderBy: {
+                            order: 'asc',
+                        },
+                    },
+                },
+            });
+            this.logger.log(`Course created: ${course.name} by ${user.email}`);
+            return updatedCourse;
+        }
+        catch (error) {
+            await this.prisma.course.delete({ where: { id: course.id } });
+            this.logger.error(`Failed to create course: ${error.message}`);
+            throw error;
+        }
     }
     async getLecturerCourses(userId, includeInactive = false) {
         const user = await this.prisma.user.findUnique({
@@ -57,10 +102,20 @@ let CourseService = CourseService_1 = class CourseService {
         }
         const courses = await this.prisma.course.findMany({
             where,
-            orderBy: {
-                createdAt: 'desc',
-            },
+            orderBy: [
+                {
+                    isActive: 'desc',
+                },
+                {
+                    createdAt: 'desc',
+                },
+            ],
             include: {
+                images: {
+                    orderBy: {
+                        order: 'asc',
+                    },
+                },
                 _count: {
                     select: {
                         enrollments: true,
@@ -86,6 +141,11 @@ let CourseService = CourseService_1 = class CourseService {
                                 email: true,
                             },
                         },
+                    },
+                },
+                images: {
+                    orderBy: {
+                        order: 'asc',
                     },
                 },
                 _count: {
@@ -121,6 +181,8 @@ let CourseService = CourseService_1 = class CourseService {
             level: course.level,
             duration: course.duration,
             hourlyRate: course.hourlyRate,
+            flyer: course.flyer,
+            images: course.images,
             lecturer: {
                 id: course.lecturer.id,
                 firstName: course.lecturer.firstName,
@@ -131,7 +193,7 @@ let CourseService = CourseService_1 = class CourseService {
             isOwner: false,
         };
     }
-    async updateCourse(courseId, userId, dto) {
+    async updateCourse(courseId, userId, dto, flyer, images) {
         const course = await this.prisma.course.findUnique({
             where: { id: courseId },
             include: {
@@ -140,6 +202,7 @@ let CourseService = CourseService_1 = class CourseService {
                         user: true,
                     },
                 },
+                images: true,
             },
         });
         if (!course) {
@@ -148,9 +211,53 @@ let CourseService = CourseService_1 = class CourseService {
         if (course.lecturer.userId !== userId) {
             throw new common_1.ForbiddenException('You do not have permission to update this course');
         }
+        const updateData = { ...dto };
+        if (flyer) {
+            (0, file_upload_util_1.validateFileSize)(flyer, 5);
+            if (course.flyer) {
+                const oldFlyerKey = this.s3Service.extractKeyFromUrl(course.flyer);
+                if (oldFlyerKey) {
+                    await this.s3Service.deleteFile(oldFlyerKey);
+                }
+            }
+            const flyerKey = (0, file_upload_util_1.generateCourseImageKey)(course.id, flyer.originalname, 'flyer');
+            updateData.flyer = await this.s3Service.uploadFile(flyer.buffer, flyerKey, flyer.mimetype);
+        }
+        if (images && images.length > 0) {
+            for (const oldImage of course.images) {
+                const oldImageKey = this.s3Service.extractKeyFromUrl(oldImage.imageUrl);
+                if (oldImageKey) {
+                    await this.s3Service.deleteFile(oldImageKey);
+                }
+            }
+            await this.prisma.courseImage.deleteMany({
+                where: { courseId: course.id },
+            });
+            const imageRecords = [];
+            for (let i = 0; i < images.length; i++) {
+                const image = images[i];
+                (0, file_upload_util_1.validateFileSize)(image, 5);
+                const imageKey = (0, file_upload_util_1.generateCourseImageKey)(course.id, image.originalname, 'image');
+                const imageUrl = await this.s3Service.uploadFile(image.buffer, imageKey, image.mimetype);
+                imageRecords.push({
+                    imageUrl,
+                    order: i,
+                });
+            }
+            updateData.images = {
+                create: imageRecords,
+            };
+        }
         const updatedCourse = await this.prisma.course.update({
             where: { id: courseId },
-            data: dto,
+            data: updateData,
+            include: {
+                images: {
+                    orderBy: {
+                        order: 'asc',
+                    },
+                },
+            },
         });
         this.logger.log(`Course updated: ${updatedCourse.name} by ${course.lecturer.user.email}`);
         return updatedCourse;
@@ -213,6 +320,11 @@ let CourseService = CourseService_1 = class CourseService {
                             lastName: true,
                         },
                     },
+                    images: {
+                        orderBy: {
+                            order: 'asc',
+                        },
+                    },
                     _count: {
                         select: {
                             enrollments: true,
@@ -231,6 +343,8 @@ let CourseService = CourseService_1 = class CourseService {
                 level: course.level,
                 duration: course.duration,
                 hourlyRate: course.hourlyRate,
+                flyer: course.flyer,
+                images: course.images,
                 lecturer: course.lecturer,
                 enrollmentsCount: course._count.enrollments,
             })),
@@ -246,6 +360,7 @@ let CourseService = CourseService_1 = class CourseService {
 exports.CourseService = CourseService;
 exports.CourseService = CourseService = CourseService_1 = __decorate([
     (0, common_1.Injectable)(),
-    __metadata("design:paramtypes", [prisma_service_1.PrismaService])
+    __metadata("design:paramtypes", [prisma_service_1.PrismaService,
+        s3_service_1.S3Service])
 ], CourseService);
 //# sourceMappingURL=course.service.js.map

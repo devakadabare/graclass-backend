@@ -133,12 +133,13 @@ model Student {
   updatedAt      DateTime @updatedAt
 
   // Relations
-  user                  User               @relation(fields: [userId], references: [id], onDelete: Cascade)
-  courseEnrollments     CourseEnrollment[]
-  groupEnrollments      GroupEnrollment[]
-  individualClasses     Class[]            @relation("IndividualStudentClasses")
-  createdGroups         StudentGroup[]     @relation("GroupCreator")
-  lecturerRegistrations LecturerStudent[]
+  user                     User                      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  courseEnrollments        CourseEnrollment[]
+  groupEnrollments         GroupEnrollment[]
+  individualClasses        Class[]                   @relation("IndividualStudentClasses")
+  createdGroups            StudentGroup[]            @relation("GroupCreator")
+  lecturerRegistrations    LecturerStudent[]
+  studentCourseEnrollments StudentCourseEnrollment[]
 
   @@index([userId])
   @@map("students")
@@ -148,39 +149,75 @@ model StudentGroup {
   id          String   @id @default(uuid())
   name        String
   description String?  @db.Text
+  groupCode   String?  @unique // Unique code for students to join the group
   createdBy   String
   isActive    Boolean  @default(true)
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 
   // Relations
-  creator       Student            @relation("GroupCreator", fields: [createdBy], references: [id])
-  enrollments   GroupEnrollment[]
-  classes       Class[]            @relation("GroupClasses")
-  courseEnrolls CourseEnrollment[]
+  creator                  Student                   @relation("GroupCreator", fields: [createdBy], references: [id])
+  members                  GroupEnrollment[]
+  classes                  Class[]                   @relation("GroupClasses")
+  courseEnrolls            CourseEnrollment[]
+  studentCourseEnrollments StudentCourseEnrollment[]
 
   @@index([createdBy])
   @@index([isActive])
+  @@index([groupCode])
   @@map("student_groups")
 }
 
 model GroupEnrollment {
-  id        String           @id @default(uuid())
-  studentId String
-  groupId   String
-  status    EnrollmentStatus @default(PENDING)
-  createdAt DateTime         @default(now())
-  updatedAt DateTime         @updatedAt
+  id              String           @id @default(uuid())
+  studentId       String
+  groupId         String
+  status          EnrollmentStatus @default(PENDING) // Owner approval status
+  approvedByOwner Boolean          @default(false)
+  approvedAt      DateTime?
+  rejectedAt      DateTime?
+  createdAt       DateTime         @default(now())
+  updatedAt       DateTime         @updatedAt
 
   // Relations
-  student Student      @relation(fields: [studentId], references: [id], onDelete: Cascade)
-  group   StudentGroup @relation(fields: [groupId], references: [id], onDelete: Cascade)
+  student                  Student                   @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  group                    StudentGroup              @relation(fields: [groupId], references: [id], onDelete: Cascade)
+  studentCourseEnrollments StudentCourseEnrollment[]
 
   @@unique([studentId, groupId])
   @@index([studentId])
   @@index([groupId])
   @@index([status])
   @@map("group_enrollments")
+}
+
+// StudentCourseEnrollment tracks individual student enrollments in courses
+// when they join a group that's already enrolled in courses
+model StudentCourseEnrollment {
+  id                 String           @id @default(uuid())
+  studentId          String
+  courseId           String
+  groupEnrollmentId  String
+  studentGroupId     String
+  status             EnrollmentStatus @default(PENDING) // Lecturer approval status
+  approvedByLecturer Boolean          @default(false)
+  requestedAt        DateTime         @default(now())
+  approvedAt         DateTime?
+  rejectedAt         DateTime?
+
+  // Relations
+  student         Student         @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  course          Course          @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  groupEnrollment GroupEnrollment @relation(fields: [groupEnrollmentId], references: [id], onDelete: Cascade)
+  studentGroup    StudentGroup    @relation(fields: [studentGroupId], references: [id], onDelete: Cascade)
+
+  @@unique([studentId, courseId, studentGroupId])
+  @@index([studentId])
+  @@index([courseId])
+  @@index([groupEnrollmentId])
+  @@index([studentGroupId])
+  @@index([status])
+  @@map("student_course_enrollments")
 }
 
 // ================================
@@ -202,11 +239,12 @@ model Course {
   updatedAt   DateTime @updatedAt
 
   // Relations
-  lecturer    Lecturer           @relation(fields: [lecturerId], references: [id], onDelete: Cascade)
-  classes     Class[]
-  enrollments CourseEnrollment[]
-  contents    Content[]
-  images      CourseImage[]
+  lecturer                 Lecturer                  @relation(fields: [lecturerId], references: [id], onDelete: Cascade)
+  classes                  Class[]
+  enrollments              CourseEnrollment[]
+  contents                 Content[]
+  images                   CourseImage[]
+  studentCourseEnrollments StudentCourseEnrollment[]
 
   @@index([lecturerId])
   @@index([isActive])
