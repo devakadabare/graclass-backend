@@ -11,15 +11,13 @@ export declare class CourseController {
         images: {
             id: string;
             createdAt: Date;
-            courseId: string;
             imageUrl: string;
             order: number;
+            courseId: string;
         }[];
     } & {
         id: string;
-        isActive: boolean;
-        createdAt: Date;
-        updatedAt: Date;
+        lecturerId: string;
         name: string;
         description: string | null;
         subject: string;
@@ -27,7 +25,9 @@ export declare class CourseController {
         duration: number;
         hourlyRate: import("@prisma/client/runtime/library").Decimal;
         flyer: string | null;
-        lecturerId: string;
+        isActive: boolean;
+        createdAt: Date;
+        updatedAt: Date;
     }>;
     getMyCourses(userId: string, includeInactive: boolean): Promise<{
         enrollmentsCount: number;
@@ -35,18 +35,16 @@ export declare class CourseController {
         images: {
             id: string;
             createdAt: Date;
-            courseId: string;
             imageUrl: string;
             order: number;
+            courseId: string;
         }[];
         _count: {
             classes: number;
             enrollments: number;
         };
         id: string;
-        isActive: boolean;
-        createdAt: Date;
-        updatedAt: Date;
+        lecturerId: string;
         name: string;
         description: string | null;
         subject: string;
@@ -54,7 +52,9 @@ export declare class CourseController {
         duration: number;
         hourlyRate: import("@prisma/client/runtime/library").Decimal;
         flyer: string | null;
-        lecturerId: string;
+        isActive: boolean;
+        createdAt: Date;
+        updatedAt: Date;
     }[]>;
     searchCourses(subject?: string, level?: string, page?: number, limit?: number): Promise<{
         data: {
@@ -69,9 +69,9 @@ export declare class CourseController {
             images: {
                 id: string;
                 createdAt: Date;
-                courseId: string;
                 imageUrl: string;
                 order: number;
+                courseId: string;
             }[];
             lecturer: {
                 id: string;
@@ -88,6 +88,14 @@ export declare class CourseController {
         };
     }>;
     getCourseById(id: string, userId?: string): Promise<{
+        flyer: string | null;
+        images: {
+            id: string;
+            createdAt: Date;
+            imageUrl: string;
+            order: number;
+            courseId: string;
+        }[];
         enrollmentsCount: number;
         classesCount: number;
         isOwner: boolean;
@@ -99,6 +107,7 @@ export declare class CourseController {
             id: string;
             createdAt: Date;
             updatedAt: Date;
+            userId: string;
             firstName: string;
             lastName: string;
             phone: string | null;
@@ -106,31 +115,22 @@ export declare class CourseController {
             qualifications: string | null;
             profilePicture: string | null;
             profileImage: string | null;
-            userId: string;
         };
-        images: {
-            id: string;
-            createdAt: Date;
-            courseId: string;
-            imageUrl: string;
-            order: number;
-        }[];
         _count: {
             classes: number;
             enrollments: number;
         };
         id: string;
-        isActive: boolean;
-        createdAt: Date;
-        updatedAt: Date;
+        lecturerId: string;
         name: string;
         description: string | null;
         subject: string;
         level: string | null;
         duration: number;
         hourlyRate: import("@prisma/client/runtime/library").Decimal;
-        flyer: string | null;
-        lecturerId: string;
+        isActive: boolean;
+        createdAt: Date;
+        updatedAt: Date;
     } | {
         id: string;
         name: string;
@@ -140,17 +140,21 @@ export declare class CourseController {
         duration: number;
         hourlyRate: import("@prisma/client/runtime/library").Decimal;
         flyer: string | null;
+        isActive: boolean;
+        createdAt: Date;
+        updatedAt: Date;
         images: {
             id: string;
             createdAt: Date;
-            courseId: string;
             imageUrl: string;
             order: number;
+            courseId: string;
         }[];
         lecturer: {
             id: string;
             firstName: string;
             lastName: string;
+            email: string;
         };
         enrollmentsCount: number;
         classesCount: number;
@@ -163,15 +167,13 @@ export declare class CourseController {
         images: {
             id: string;
             createdAt: Date;
-            courseId: string;
             imageUrl: string;
             order: number;
+            courseId: string;
         }[];
     } & {
         id: string;
-        isActive: boolean;
-        createdAt: Date;
-        updatedAt: Date;
+        lecturerId: string;
         name: string;
         description: string | null;
         subject: string;
@@ -179,7 +181,9 @@ export declare class CourseController {
         duration: number;
         hourlyRate: import("@prisma/client/runtime/library").Decimal;
         flyer: string | null;
-        lecturerId: string;
+        isActive: boolean;
+        createdAt: Date;
+        updatedAt: Date;
     }>;
     deleteCourse(id: string, userId: string): Promise<{
         message: string;

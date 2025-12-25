@@ -209,6 +209,33 @@ export class CourseService {
       throw new NotFoundException('Course not found');
     }
 
+    // Generate presigned URLs for flyer and images
+    let flyerUrl = course.flyer;
+    if (course.flyer) {
+      try {
+        const key = this.s3Service.extractKeyFromUrl(course.flyer);
+        flyerUrl = await this.s3Service.getSignedUrl(key, 3600); // 1 hour expiry
+      } catch (error) {
+        this.logger.warn(`Failed to generate signed URL for flyer: ${error.message}`);
+      }
+    }
+
+    const imagesWithSignedUrls = await Promise.all(
+      course.images.map(async (image) => {
+        try {
+          const key = this.s3Service.extractKeyFromUrl(image.imageUrl);
+          const signedUrl = await this.s3Service.getSignedUrl(key, 3600);
+          return {
+            ...image,
+            imageUrl: signedUrl,
+          };
+        } catch (error) {
+          this.logger.warn(`Failed to generate signed URL for image: ${error.message}`);
+          return image;
+        }
+      })
+    );
+
     // If a userId is provided, verify ownership for private data
     if (userId) {
       const user = await this.prisma.user.findUnique({
@@ -219,6 +246,8 @@ export class CourseService {
       if (user?.lecturer?.id === course.lecturerId) {
         return {
           ...course,
+          flyer: flyerUrl,
+          images: imagesWithSignedUrls,
           enrollmentsCount: course._count.enrollments,
           classesCount: course._count.classes,
           isOwner: true,
@@ -235,12 +264,16 @@ export class CourseService {
       level: course.level,
       duration: course.duration,
       hourlyRate: course.hourlyRate,
-      flyer: course.flyer,
-      images: course.images,
+      flyer: flyerUrl,
+      isActive: course.isActive,
+      createdAt: course.createdAt,
+      updatedAt: course.updatedAt,
+      images: imagesWithSignedUrls,
       lecturer: {
         id: course.lecturer.id,
         firstName: course.lecturer.firstName,
         lastName: course.lecturer.lastName,
+        email: course.lecturer.user.email,
       },
       enrollmentsCount: course._count.enrollments,
       classesCount: course._count.classes,

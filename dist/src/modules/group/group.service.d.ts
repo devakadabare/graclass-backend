@@ -13,12 +13,12 @@ export declare class GroupService {
         };
     } & {
         id: string;
-        name: string;
-        description: string | null;
-        groupCode: string | null;
         isActive: boolean;
         createdAt: Date;
         updatedAt: Date;
+        name: string;
+        description: string | null;
+        groupCode: string | null;
         createdBy: string;
     }>;
     searchByGroupCode(groupCode: string): Promise<{
@@ -31,12 +31,12 @@ export declare class GroupService {
             members: number;
         };
         id: string;
-        name: string;
-        description: string | null;
-        groupCode: string | null;
         isActive: boolean;
         createdAt: Date;
         updatedAt: Date;
+        name: string;
+        description: string | null;
+        groupCode: string | null;
         createdBy: string;
     }>;
     getAllGroups(page?: number, limit?: number): Promise<{
@@ -50,12 +50,12 @@ export declare class GroupService {
                 members: number;
             };
             id: string;
-            name: string;
-            description: string | null;
-            groupCode: string | null;
             isActive: boolean;
             createdAt: Date;
             updatedAt: Date;
+            name: string;
+            description: string | null;
+            groupCode: string | null;
             createdBy: string;
         }[];
         meta: {
@@ -84,19 +84,19 @@ export declare class GroupService {
             updatedAt: Date;
             studentId: string;
             status: import(".prisma/client").$Enums.EnrollmentStatus;
-            groupId: string;
             approvedByOwner: boolean;
             approvedAt: Date | null;
             rejectedAt: Date | null;
+            groupId: string;
         })[];
     } & {
         id: string;
-        name: string;
-        description: string | null;
-        groupCode: string | null;
         isActive: boolean;
         createdAt: Date;
         updatedAt: Date;
+        name: string;
+        description: string | null;
+        groupCode: string | null;
         createdBy: string;
     }>;
     getGroupDetails(groupId: string, userId: string): Promise<{
@@ -164,12 +164,12 @@ export declare class GroupService {
             members: number;
         };
         id: string;
-        name: string;
-        description: string | null;
-        groupCode: string | null;
         isActive: boolean;
         createdAt: Date;
         updatedAt: Date;
+        name: string;
+        description: string | null;
+        groupCode: string | null;
         createdBy: string;
     }[]>;
     getJoinedGroups(userId: string): Promise<{
@@ -182,12 +182,12 @@ export declare class GroupService {
             members: number;
         };
         id: string;
-        name: string;
-        description: string | null;
-        groupCode: string | null;
         isActive: boolean;
         createdAt: Date;
         updatedAt: Date;
+        name: string;
+        description: string | null;
+        groupCode: string | null;
         createdBy: string;
     }[]>;
     joinGroupByCode(userId: string, groupCode: string): Promise<{
@@ -201,10 +201,10 @@ export declare class GroupService {
         updatedAt: Date;
         studentId: string;
         status: import(".prisma/client").$Enums.EnrollmentStatus;
-        groupId: string;
         approvedByOwner: boolean;
         approvedAt: Date | null;
         rejectedAt: Date | null;
+        groupId: string;
     }>;
     getPendingJoinRequests(userId: string): Promise<({
         student: {
@@ -224,10 +224,10 @@ export declare class GroupService {
         updatedAt: Date;
         studentId: string;
         status: import(".prisma/client").$Enums.EnrollmentStatus;
-        groupId: string;
         approvedByOwner: boolean;
         approvedAt: Date | null;
         rejectedAt: Date | null;
+        groupId: string;
     })[]>;
     approveJoinRequest(userId: string, enrollmentId: string): Promise<{
         id: string;
@@ -235,10 +235,10 @@ export declare class GroupService {
         updatedAt: Date;
         studentId: string;
         status: import(".prisma/client").$Enums.EnrollmentStatus;
-        groupId: string;
         approvedByOwner: boolean;
         approvedAt: Date | null;
         rejectedAt: Date | null;
+        groupId: string;
     }>;
     rejectJoinRequest(userId: string, enrollmentId: string): Promise<{
         id: string;
@@ -246,22 +246,22 @@ export declare class GroupService {
         updatedAt: Date;
         studentId: string;
         status: import(".prisma/client").$Enums.EnrollmentStatus;
-        groupId: string;
         approvedByOwner: boolean;
         approvedAt: Date | null;
         rejectedAt: Date | null;
+        groupId: string;
     }>;
     removeMember(userId: string, enrollmentId: string): Promise<{
         message: string;
     }>;
     updateGroup(userId: string, groupId: string, dto: UpdateGroupDto): Promise<{
         id: string;
-        name: string;
-        description: string | null;
-        groupCode: string | null;
         isActive: boolean;
         createdAt: Date;
         updatedAt: Date;
+        name: string;
+        description: string | null;
+        groupCode: string | null;
         createdBy: string;
     }>;
     deleteGroup(userId: string, groupId: string): Promise<{
